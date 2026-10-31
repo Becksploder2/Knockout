@@ -99,6 +99,12 @@ func new_episode() -> void:
 	players.clear()
 	for i in range(9):
 		players.append({"name":"Player %d" % (i+1), "bank":0, "alive":true, "locked":false})
+	var lineup_file := FileAccess.open("user://knockout_lineup.json", FileAccess.READ)
+	if lineup_file != null:
+		var lineup: Variant = JSON.parse_string(lineup_file.get_as_text())
+		if lineup is Array:
+			for i in range(min(9, lineup.size())):
+				players[i]["name"] = str(lineup[i])
 	if episode > 1:
 		players[4]["name"] = "Returning Champion"
 	pot = carry
