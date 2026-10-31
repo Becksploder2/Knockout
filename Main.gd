@@ -69,10 +69,12 @@ func _ready() -> void:
 	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(scroll)
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	main = VBoxContainer.new()
 	main.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	main.custom_minimum_size = Vector2(1100, 0)
+	main.custom_minimum_size = Vector2(950, 0)
 	main.add_theme_constant_override("separation", 12)
 	scroll.add_child(main)
 	var title := Label.new()
@@ -153,7 +155,7 @@ func render() -> void:
 	for i in range(9):
 		var p: Dictionary = players[i]
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(300, 105)
+		b.custom_minimum_size = Vector2(295, 105)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var state := "ACTIVE"
 		if not p["alive"]:
