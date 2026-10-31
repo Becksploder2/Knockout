@@ -3,6 +3,13 @@ extends Control
 var pot := 25000
 var episode := 1
 var round_number := 1
+var terminators_this_round := 0
+var final_wagers: Array = []
+var final_answers: Array = []
+var final_cursor := 0
+var final_scores: Array = []
+var final_tied: Array = []
+var final_result_text := ""
 var phase := "questions"
 var players: Array = []
 var pair: Array = []
@@ -117,6 +124,7 @@ func new_episode() -> void:
 	buzz = -1
 	bonus = 0
 	round_number = 1
+	terminators_this_round = 0
 	render()
 
 func living() -> Array:
@@ -159,16 +167,20 @@ func render() -> void:
 		n.queue_free()
 	if phase == "questions":
 		question.text = questions[question_index % questions.size()][0]
-		add_button("Random Terminator", start_terminator)
-		add_button("Next cash round", next_round)
+		if round_number <= 2 and terminators_this_round < 3:
+			add_button("KNOCKOUT — Activate Terminator", start_terminator)
+		elif round_number <= 2:
+			add_button("Advance to next round", next_round)
+		elif round_number == 3:
+			add_button("Begin Final Knockout", start_final)
 	elif phase == "answer":
 		add_button("Submit answer", submit_answer)
 	elif phase == "terminator":
 		question.text = "TERMINATOR: " + questions[question_index % questions.size()][0]
 		add_button("Submit buzzer answer", submit_answer)
 	elif phase == "final":
-		question.text = "FINAL KNOCKOUT: " + questions[question_index % questions.size()][0]
-		add_button("Resolve final (AI wagers)", resolve_final)
+		question.text = "FINAL KNOCKOUT: %s — Wager (0 to $%d), then lock in answer: %s" % [players[final_tied[final_cursor]]["name"], players[final_tied[final_cursor]]["bank"], questions[question_index % questions.size()][0]]
+		add_button("Submit wager and answer", submit_final)
 	elif phase == "bonus":
 		question.text = "SUDDEN DEATH %d/5: %s" % [bonus+1, questions[question_index % questions.size()][0]]
 		add_button("Submit bonus answer", submit_answer)
@@ -204,8 +216,11 @@ func submit_answer() -> void:
 		players[loser]["alive"] = false
 		pair.clear()
 		phase = "questions"
-		if living().size() == 2:
-			start_final()
+		if terminators_this_round == 3:
+			phase = "questions"
+			if round_number == 2:
+				round_number = 3
+				terminators_this_round = 0
 	elif phase == "bonus":
 		if correct:
 			bonus += 1
@@ -221,6 +236,7 @@ func submit_answer() -> void:
 
 func next_round() -> void:
 	round_number += 1
+	terminators_this_round = 0
 	for p in players:
 		if p["alive"]:
 			p["locked"] = false
@@ -228,9 +244,9 @@ func next_round() -> void:
 
 func start_terminator() -> void:
 	var a := living()
-	if a.size() <= 2:
-		start_final()
+	if round_number > 2 or terminators_this_round >= 3 or a.size() <= 3:
 		return
+	terminators_this_round += 1
 	a.shuffle()
 	pair = [a[0], a[1]]
 	buzz = -1
@@ -240,25 +256,69 @@ func start_terminator() -> void:
 
 func start_final() -> void:
 	pair = living()
+	final_tied = pair.duplicate()
+	final_wagers.clear()
+	final_answers.clear()
+	final_scores.clear()
+	final_cursor = 0
 	phase = "final"
 	_play_cue("Final Knockout")
 	render()
 
-func resolve_final() -> void:
-	var a: int = pair[0]
-	var b: int = pair[1]
-	var wa: int = randi_range(0, int(players[a]["bank"]))
-	var wb: int = randi_range(0, int(players[b]["bank"]))
-	var sa: int = int(players[a]["bank"]) + (wa if randf() < 0.6 else -wa)
-	var sb: int = int(players[b]["bank"]) + (wb if randf() < 0.6 else -wb)
-	champ = a if sa >= sb else b
-	var loser: int = b if champ == a else a
-	pot += players[loser]["bank"]
-	players[loser]["bank"] = 0
-	players[loser]["alive"] = false
+func submit_final() -> void:
+	var entry := answer_field.text.strip_edges()
+	var parts := entry.split("|", false, 1)
+	if parts.size() != 2:
+		question.text = "Enter wager|answer (example: 1000|Austin)"
+		return
+	if not parts[0].strip_edges().is_valid_int():
+		question.text = "Wager must be a whole number. Example: 1000|Austin"
+		return
+	var player_index: int = final_tied[final_cursor]
+	var wager := int(parts[0].strip_edges())
+	if wager < 0 or wager > int(players[player_index]["bank"]):
+		question.text = "Wager must be between $0 and your bank."
+		return
+	final_wagers.append(wager)
+	final_answers.append(parts[1].strip_edges())
+	answer_field.clear()
+	final_cursor += 1
+	if final_cursor < final_tied.size():
+		render()
+		return
+	var expected: String = str(questions[question_index % questions.size()][1]).to_lower()
+	for i in range(final_tied.size()):
+		var p_index: int = final_tied[i]
+		var score: int = int(players[p_index]["bank"])
+		if str(final_answers[i]).to_lower() == expected:
+			score += int(final_wagers[i])
+		else:
+			score -= int(final_wagers[i])
+		final_scores.append(score)
+	var high: int = final_scores.max()
+	var winners: Array = []
+	for i in range(final_scores.size()):
+		if int(final_scores[i]) == high:
+			winners.append(final_tied[i])
+	if winners.size() > 1:
+		final_tied = winners
+		final_cursor = 0
+		final_wagers.clear()
+		final_answers.clear()
+		final_scores.clear()
+		question_index += 1
+		render()
+		return
+	champ = int(winners[0])
+	for i in living():
+		if i != champ:
+			pot += int(players[i]["bank"])
+			players[i]["bank"] = 0
+			players[i]["alive"] = false
 	phase = "bonus"
-	_play_cue("Sudden Death")
 	bonus = 0
+	question_index += 1
+	_play_cue("Sudden Death")
 	render()
 
 func advance_episode() -> void:
