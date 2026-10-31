@@ -20,6 +20,14 @@ jobs:
       - name: Validate Godot scripts and scenes
         run: |
           ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --editor --quit
+      - name: Smoke test nine-contestant board scene
+        run: |
+          set -o pipefail
+          ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --quit-after 20 res://Main.tscn 2>&1 | tee board-smoke.log
+          if grep -Ei "SCRIPT ERROR|Parse Error|Invalid call|Failed to load script|ERROR:" board-smoke.log; then
+            echo "Board smoke test reported an error"
+            exit 1
+          fi
       - name: Export Windows game
         run: |
           mkdir -p dist
