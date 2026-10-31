@@ -137,7 +137,7 @@ func _start_game() -> void:
 		return
 	_label("Starting KNOCKOUT studio...")
 	# Defer scene replacement until the current button signal finishes.
-	get_tree().call_deferred("change_scene_to_packed", scene)
+	call_deferred("_enter_board", scene)
 
 func _load_roster() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
@@ -191,3 +191,8 @@ func _import_audio(path: String) -> void:
 	else:
 		_label("Import failed (error %d)." % err)
 	music_dialog.queue_free()
+
+func _enter_board(scene: PackedScene) -> void:
+	var result: Error = get_tree().change_scene_to_packed(scene)
+	if result != OK:
+		_label("ERROR: Board transition failed (%d)." % result)
