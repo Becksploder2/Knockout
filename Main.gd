@@ -43,6 +43,8 @@ var music_enabled := true
 var music_dialog: FileDialog
 var selected_cue := "Main Menu"
 var menu: VBoxContainer
+var studio_view: SubViewportContainer
+var studio_root: Node3D
 const CUES := ["Main Menu", "Host Entrance", "Opening Round", "Terminator", "Final Knockout", "Sudden Death", "Jackpot Win", "Elimination"]
 
 
@@ -57,10 +59,12 @@ func _ready() -> void:
 	var fallback_status := get_node_or_null("FallbackStatus")
 	if fallback_status != null:
 		fallback_status.queue_free()
+	_build_studio()
 	var bg := ColorRect.new()
-	bg.color = Color("#0d1527")
+	bg.color = Color(0.015, 0.02, 0.05, 0.28)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -446,3 +450,66 @@ func _load_music() -> void:
 		music_volume = float(cfg.get_value("audio", "music_volume", 0.65))
 		music_enabled = bool(cfg.get_value("audio", "music_enabled", true))
 		music_files = cfg.get_value("audio", "files", {})
+
+func _build_studio() -> void:
+	studio_view = SubViewportContainer.new()
+	studio_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	studio_view.stretch = true
+	studio_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(studio_view)
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 800)
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	studio_view.add_child(viewport)
+	studio_root = Node3D.new()
+	viewport.add_child(studio_root)
+	var camera := Camera3D.new()
+	camera.position = Vector3(0, 7.2, 19)
+	camera.look_at_from_position(camera.position, Vector3(0, 3.1, 0), Vector3.UP)
+	studio_root.add_child(camera)
+	camera.current = true
+	var light := DirectionalLight3D.new()
+	light.rotation_degrees = Vector3(-48, 25, 0)
+	light.light_energy = 1.5
+	studio_root.add_child(light)
+	var environment := WorldEnvironment.new()
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("#08112d")
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("#5d7fae")
+	env.ambient_light_energy = 0.5
+	environment.environment = env
+	studio_root.add_child(environment)
+	_studio_box(Vector3(0, -0.4, 0), Vector3(28, 0.7, 17), Color("#11182a"))
+	for row_index in range(3):
+		for col_index in range(3):
+			var x: float = float(col_index - 1) * 5.0
+			var y: float = 7.0 - float(row_index) * 2.7
+			var champion := row_index == 1 and col_index == 1
+			var accent := Color("#ffcb62") if champion else Color("#218bff")
+			_studio_box(Vector3(x, y, -4), Vector3(4.35, 2.3, 0.5), accent)
+			_studio_box(Vector3(x, y, -3.69), Vector3(4.0, 2.0, 0.12), Color("#101f3d"))
+			_studio_box(Vector3(x, y - 0.84, -3.5), Vector3(3.7, 0.2, 0.45), accent)
+	_studio_box(Vector3(-6.4, 0.6, 5), Vector3(3.2, 1.7, 1.7), Color("#b28b44"))
+	_studio_box(Vector3(-3.5, 0.65, 5), Vector3(0.85, 1.3, 0.85), Color("#b8242f"))
+	_studio_box(Vector3(-3.5, 1.36, 5), Vector3(0.9, 0.15, 0.9), Color("#ff3344"))
+	_studio_box(Vector3(-0.6, 0.6, 5), Vector3(2.2, 1.7, 1.5), Color("#244aa2"))
+	# Stylized Arianna Dawson: red outfit, blonde hair, glasses.
+	_studio_box(Vector3(-6.4, 2.05, 5), Vector3(0.75, 1.55, 0.45), Color("#b52637"))
+	_studio_box(Vector3(-6.4, 3.15, 5), Vector3(0.6, 0.72, 0.5), Color("#f2c9a2"))
+	_studio_box(Vector3(-6.4, 3.55, 5), Vector3(0.78, 0.25, 0.55), Color("#efc95a"))
+	_studio_box(Vector3(-6.4, 3.17, 5.29), Vector3(0.68, 0.12, 0.08), Color("#1c2230"))
+
+func _studio_box(pos: Vector3, dimensions: Vector3, color: Color) -> void:
+	var node := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = dimensions
+	node.mesh = mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.metallic = 0.35
+	material.roughness = 0.3
+	node.material_override = material
+	node.position = pos
+	studio_root.add_child(node)
