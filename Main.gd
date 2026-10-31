@@ -56,9 +56,12 @@ func _ready() -> void:
 	add_child(bg)
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(scroll)
 	main = VBoxContainer.new()
 	main.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	main.custom_minimum_size = Vector2(1100, 0)
 	main.add_theme_constant_override("separation", 12)
 	scroll.add_child(main)
 	var title := Label.new()
