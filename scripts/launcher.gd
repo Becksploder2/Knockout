@@ -1,0 +1,150 @@
+extends Control
+
+const SAVE_PATH := "user://knockout_roster.json"
+var roster: Array = []
+var chosen: Array = []
+var panel: VBoxContainer
+var name_edit: LineEdit
+var status: Label
+
+func _ready() -> void:
+	_load_roster()
+	var background := ColorRect.new()
+	background.color = Color("#0d1527")
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(background)
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(scroll)
+	panel = VBoxContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_constant_override("separation", 10)
+	scroll.add_child(panel)
+	_main_menu()
+
+func _button(caption: String, action: Callable) -> void:
+	var b := Button.new()
+	b.text = caption
+	b.custom_minimum_size = Vector2(360, 46)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	b.pressed.connect(action)
+	panel.add_child(b)
+
+func _label(caption: String, large: bool = false) -> void:
+	var l := Label.new()
+	l.text = caption
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if large:
+		l.add_theme_font_size_override("font_size", 40)
+	panel.add_child(l)
+
+func _clear() -> void:
+	for n in panel.get_children():
+		panel.remove_child(n)
+		n.queue_free()
+
+func _main_menu() -> void:
+	_clear()
+	_label("K N O C K O U T", true)
+	_label("One show. Nine contestants. Seven Terminators.")
+	_button("PLAY KNOCKOUT", _choose_players)
+	_button("CREATE CONTESTANT", _create_screen)
+	_button("MANAGE CONTESTANTS", _manage_screen)
+	_button("QUIT", func(): get_tree().quit())
+
+func _create_screen() -> void:
+	_clear()
+	_label("CREATE CONTESTANT", true)
+	_label("Enter the contestant's display name")
+	name_edit = LineEdit.new()
+	name_edit.placeholder_text = "Contestant name"
+	name_edit.custom_minimum_size = Vector2(400, 48)
+	panel.add_child(name_edit)
+	status = Label.new()
+	panel.add_child(status)
+	_button("SAVE CONTESTANT", _save_new)
+	_button("BACK", _main_menu)
+
+func _save_new() -> void:
+	var name_text := name_edit.text.strip_edges()
+	if name_text.is_empty():
+		status.text = "Enter a name before saving."
+		return
+	for p in roster:
+		if str(p["name"]).to_lower() == name_text.to_lower():
+			status.text = "That name is already saved."
+			return
+	roster.append({"name": name_text, "human": false})
+	_save_roster()
+	_manage_screen()
+
+func _manage_screen() -> void:
+	_clear()
+	_label("SAVED CONTESTANTS", true)
+	if roster.is_empty():
+		_label("No saved contestants yet.")
+	for i in range(roster.size()):
+		var item: Dictionary = roster[i]
+		_button(str(item["name"]) + "  — DELETE", _delete_player.bind(i))
+	_button("CREATE CONTESTANT", _create_screen)
+	_button("BACK", _main_menu)
+
+func _delete_player(index: int) -> void:
+	roster.remove_at(index)
+	chosen.clear()
+	_save_roster()
+	_manage_screen()
+
+func _choose_players() -> void:
+	_clear()
+	_label("CHOOSE NINE CONTESTANTS", true)
+	_label("%d of 9 selected" % chosen.size())
+	_label("Select saved contestants, or fill remaining slots with AI players.")
+	for i in range(roster.size()):
+		var marker := "[SELECTED] " if chosen.has(i) else "[ ] "
+		_button(marker + str(roster[i]["name"]), _toggle.bind(i))
+	_button("FILL EMPTY SLOTS WITH AI & START", _start_game)
+	_button("CREATE CONTESTANT", _create_screen)
+	_button("BACK", _main_menu)
+
+func _toggle(index: int) -> void:
+	if chosen.has(index):
+		chosen.erase(index)
+	elif chosen.size() < 9:
+		chosen.append(index)
+	_choose_players()
+
+func _start_game() -> void:
+	var names: Array = []
+	for index in chosen:
+		names.append(str(roster[index]["name"]))
+	while names.size() < 9:
+		names.append("AI Contestant %d" % (names.size() + 1))
+	var file := FileAccess.open("user://knockout_lineup.json", FileAccess.WRITE)
+	if file == null:
+		_label("Could not save the contestant lineup.")
+		return
+	file.store_string(JSON.stringify(names))
+	file.close()
+	var scene := load("res://Main.tscn") as PackedScene
+	if scene == null:
+		_label("Gameplay scene could not load. Please report this build.")
+		return
+	var result := get_tree().change_scene_to_packed(scene)
+	if result != OK:
+		_label("Gameplay could not start. Error %d" % result)
+
+func _load_roster() -> void:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return
+	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	if parsed is Array:
+		roster = parsed
+
+func _save_roster() -> void:
+	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify(roster))
