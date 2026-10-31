@@ -1,0 +1,28 @@
+name: Build KNOCKOUT Windows
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4 and export templates
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -q Godot_v4.4.1-stable_linux.x86_64.zip
+          chmod +x Godot_v4.4.1-stable_linux.x86_64
+          mkdir -p ~/.local/share/godot/export_templates/4.4.1.stable
+          wget -q https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz
+          unzip -q Godot_v4.4.1-stable_export_templates.tpz
+          mv templates/* ~/.local/share/godot/export_templates/4.4.1.stable/
+      - name: Export Windows game
+        run: |
+          mkdir -p dist
+          ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --import --quit
+          ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --export-release "Windows Desktop" dist/KNOCKOUT.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KNOCKOUT-Windows
+          path: dist/KNOCKOUT.exe
