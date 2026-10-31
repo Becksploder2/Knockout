@@ -306,7 +306,7 @@ func submit_final() -> void:
 		else:
 			score -= int(final_wagers[i])
 		final_scores.append(score)
-	var high: int = final_scores.max()
+	var high: int = int(final_scores.max())
 	var winners: Array = []
 	for i in range(final_scores.size()):
 		if int(final_scores[i]) == high:
@@ -497,8 +497,8 @@ func _build_studio() -> void:
 		for col_index in range(3):
 			var x: float = float(col_index - 1) * 5.0
 			var y: float = 7.0 - float(row_index) * 2.7
-			var champion := row_index == 1 and col_index == 1
-			var accent := Color("#ffcb62") if champion else Color("#218bff")
+			var champion: bool = row_index == 1 and col_index == 1
+			var accent: Color = Color("#ffcb62") if champion else Color("#218bff")
 			_studio_box(Vector3(x, y, -4), Vector3(4.35, 2.3, 0.5), accent)
 			_studio_box(Vector3(x, y, -3.69), Vector3(4.0, 2.0, 0.12), Color("#101f3d"))
 			_studio_box(Vector3(x, y - 0.84, -3.5), Vector3(3.7, 0.2, 0.45), accent)
