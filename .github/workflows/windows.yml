@@ -17,6 +17,9 @@ jobs:
           wget -q https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz
           unzip -q Godot_v4.4.1-stable_export_templates.tpz
           mv templates/* ~/.local/share/godot/export_templates/4.4.1.stable/
+      - name: Validate Godot scripts and scenes
+        run: |
+          ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --editor --quit
       - name: Export Windows game
         run: |
           mkdir -p dist
