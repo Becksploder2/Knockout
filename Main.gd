@@ -59,7 +59,7 @@ func _ready() -> void:
 	var fallback_status := get_node_or_null("FallbackStatus")
 	if fallback_status != null:
 		fallback_status.queue_free()
-	_build_studio()
+	# Create the interactive board first; initialize 3D after the first frame.
 	var bg := ColorRect.new()
 	bg.color = Color(0.015, 0.02, 0.05, 0.28)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -109,6 +109,7 @@ func _ready() -> void:
 	add_child(music_dialog)
 	_load_music()
 	new_episode()
+	call_deferred("_build_studio_behind_board")
 	# Launcher already handles menus and roster selection.
 	# Enter the contestant board immediately.
 
@@ -456,6 +457,10 @@ func _load_music() -> void:
 		music_volume = float(cfg.get_value("audio", "music_volume", 0.65))
 		music_enabled = bool(cfg.get_value("audio", "music_enabled", true))
 		music_files = cfg.get_value("audio", "files", {})
+
+func _build_studio_behind_board() -> void:
+	_build_studio()
+	move_child(studio_view, 0)
 
 func _build_studio() -> void:
 	studio_view = SubViewportContainer.new()
