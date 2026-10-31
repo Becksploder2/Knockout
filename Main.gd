@@ -255,7 +255,8 @@ func start_terminator() -> void:
 	pair = [a[0], a[1]]
 	buzz = -1
 	phase = "terminator"
-	_play_cue("Terminator")
+	_play_cue("KNOCKOUT Selection SFX")
+	_play_cue("KNOCKOUT Question Music")
 	render()
 
 func start_final() -> void:
