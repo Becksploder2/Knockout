@@ -256,7 +256,10 @@ func start_terminator() -> void:
 	buzz = -1
 	phase = "terminator"
 	_play_cue("KNOCKOUT Selection SFX")
-	_play_cue("KNOCKOUT Question Music")
+	get_tree().create_timer(2.0).timeout.connect(func():
+		if phase == "terminator":
+			_play_cue("KNOCKOUT Question Music")
+	)
 	render()
 
 func start_final() -> void:
