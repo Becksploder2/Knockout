@@ -32,6 +32,15 @@ var answer_field: LineEdit
 
 func _ready() -> void:
 	randomize()
+	var fallback := get_node_or_null("FallbackBackground")
+	if fallback != null:
+		fallback.queue_free()
+	var fallback_title := get_node_or_null("FallbackTitle")
+	if fallback_title != null:
+		fallback_title.queue_free()
+	var fallback_status := get_node_or_null("FallbackStatus")
+	if fallback_status != null:
+		fallback_status.queue_free()
 	var bg := ColorRect.new()
 	bg.color = Color("#0d1527")
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -158,7 +167,9 @@ func submit_answer() -> void:
 			players[buzz]["locked"] = true
 		phase = "questions"
 	elif phase == "terminator":
-		var loser: int = (pair[1] if buzz == pair[0] else pair[0]) if correct else buzz
+		var loser: int = buzz
+		if correct:
+			loser = pair[1] if buzz == pair[0] else pair[0]
 		pot += players[loser]["bank"]
 		players[loser]["bank"] = 0
 		players[loser]["alive"] = false
@@ -205,10 +216,10 @@ func start_final() -> void:
 func resolve_final() -> void:
 	var a: int = pair[0]
 	var b: int = pair[1]
-	var wa: int = randi_range(0, players[a]["bank"])
-	var wb: int = randi_range(0, players[b]["bank"])
-	var sa: int = players[a]["bank"] + (wa if randf() < 0.6 else -wa)
-	var sb: int = players[b]["bank"] + (wb if randf() < 0.6 else -wb)
+	var wa: int = randi_range(0, int(players[a]["bank"]))
+	var wb: int = randi_range(0, int(players[b]["bank"]))
+	var sa: int = int(players[a]["bank"]) + (wa if randf() < 0.6 else -wa)
+	var sb: int = int(players[b]["bank"]) + (wb if randf() < 0.6 else -wb)
 	champ = a if sa >= sb else b
 	var loser: int = b if champ == a else a
 	pot += players[loser]["bank"]
