@@ -93,7 +93,8 @@ func _ready() -> void:
 	add_child(music_dialog)
 	_load_music()
 	new_episode()
-	_show_menu()
+	# Launcher already handles menus and roster selection.
+	# Enter the contestant board immediately.
 
 func new_episode() -> void:
 	players.clear()
