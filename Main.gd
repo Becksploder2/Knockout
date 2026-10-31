@@ -29,6 +29,15 @@ var questions := [
 ]
 var question_index := 0
 var answer_field: LineEdit
+var music_player: AudioStreamPlayer
+var music_files: Dictionary = {}
+var music_volume := 0.65
+var music_enabled := true
+var music_dialog: FileDialog
+var selected_cue := "Main Menu"
+var menu: VBoxContainer
+const CUES := ["Main Menu", "Host Entrance", "Opening Round", "Terminator", "Final Knockout", "Sudden Death", "Jackpot Win", "Elimination"]
+
 
 func _ready() -> void:
 	randomize()
@@ -74,7 +83,17 @@ func _ready() -> void:
 	actions = HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	main.add_child(actions)
+	music_player = AudioStreamPlayer.new()
+	add_child(music_player)
+	music_dialog = FileDialog.new()
+	music_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	music_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	music_dialog.add_filter("*.mp3, *.ogg, *.wav", "Audio")
+	music_dialog.file_selected.connect(_on_music_file)
+	add_child(music_dialog)
+	_load_music()
 	new_episode()
+	_show_menu()
 
 func new_episode() -> void:
 	players.clear()
@@ -206,11 +225,13 @@ func start_terminator() -> void:
 	pair = [a[0], a[1]]
 	buzz = -1
 	phase = "terminator"
+	_play_cue("Terminator")
 	render()
 
 func start_final() -> void:
 	pair = living()
 	phase = "final"
+	_play_cue("Final Knockout")
 	render()
 
 func resolve_final() -> void:
@@ -226,9 +247,132 @@ func resolve_final() -> void:
 	players[loser]["bank"] = 0
 	players[loser]["alive"] = false
 	phase = "bonus"
+	_play_cue("Sudden Death")
 	bonus = 0
 	render()
 
 func advance_episode() -> void:
 	episode += 1
 	new_episode()
+
+func _show_menu() -> void:
+	main.hide()
+	menu = VBoxContainer.new()
+	menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	menu.alignment = BoxContainer.ALIGNMENT_CENTER
+	add_child(menu)
+	_show_main_menu()
+
+func _menu_button(caption: String, callback: Callable) -> void:
+	var b := Button.new()
+	b.text = caption
+	b.custom_minimum_size = Vector2(350, 50)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	b.pressed.connect(callback)
+	menu.add_child(b)
+
+func _clear_menu() -> void:
+	for child in menu.get_children():
+		menu.remove_child(child)
+		child.queue_free()
+
+func _show_main_menu() -> void:
+	_clear_menu()
+	var title := Label.new()
+	title.text = "K N O C K O U T"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 50)
+	menu.add_child(title)
+	_menu_button("PLAY KNOCKOUT", _start_game)
+	_menu_button("MUSIC OPTIONS", _show_music_options)
+	_menu_button("QUIT", func(): get_tree().quit())
+	_play_cue("Main Menu")
+
+func _start_game() -> void:
+	menu.hide()
+	main.show()
+	_play_cue("Opening Round")
+
+func _show_music_options() -> void:
+	_clear_menu()
+	var title := Label.new()
+	title.text = "MUSIC OPTIONS"
+	menu.add_child(title)
+	var toggle := CheckButton.new()
+	toggle.text = "Enable music"
+	toggle.button_pressed = music_enabled
+	toggle.toggled.connect(func(v: bool):
+		music_enabled = v
+		if not v:
+			music_player.stop()
+		_save_music()
+	)
+	menu.add_child(toggle)
+	var label_node := Label.new()
+	label_node.text = "Music volume"
+	menu.add_child(label_node)
+	var slider_node := HSlider.new()
+	slider_node.min_value = 0.0
+	slider_node.max_value = 1.0
+	slider_node.step = 0.05
+	slider_node.value = music_volume
+	slider_node.custom_minimum_size = Vector2(350, 32)
+	slider_node.value_changed.connect(func(v: float):
+		music_volume = v
+		music_player.volume_linear = v
+		_save_music()
+	)
+	menu.add_child(slider_node)
+	var chooser := OptionButton.new()
+	for cue in CUES:
+		chooser.add_item(cue)
+	chooser.selected = CUES.find(selected_cue)
+	chooser.item_selected.connect(func(i: int): selected_cue = CUES[i])
+	menu.add_child(chooser)
+	_menu_button("IMPORT TRACK FOR SELECTED CUE", func(): music_dialog.popup_centered(Vector2i(850, 600)))
+	_menu_button("PREVIEW TRACK", func(): _play_cue(selected_cue))
+	_menu_button("CLEAR TRACK", func():
+		music_files.erase(selected_cue)
+		music_player.stop()
+		_save_music()
+	)
+	_menu_button("BACK", _show_main_menu)
+
+func _on_music_file(path: String) -> void:
+	music_files[selected_cue] = path
+	_save_music()
+	_play_cue(selected_cue)
+
+func _play_cue(cue: String) -> void:
+	music_player.stop()
+	if not music_enabled or not music_files.has(cue):
+		return
+	var path: String = str(music_files[cue])
+	if not FileAccess.file_exists(path):
+		return
+	var stream: AudioStream = null
+	var ext := path.get_extension().to_lower()
+	if ext == "mp3":
+		stream = AudioStreamMP3.load_from_file(path)
+	elif ext == "ogg":
+		stream = AudioStreamOggVorbis.load_from_file(path)
+	elif ext == "wav":
+		stream = AudioStreamWAV.load_from_file(path)
+	if stream != null:
+		music_player.stream = stream
+		music_player.volume_linear = music_volume
+		music_player.play()
+
+func _save_music() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("audio", "music_volume", music_volume)
+	cfg.set_value("audio", "music_enabled", music_enabled)
+	cfg.set_value("audio", "files", music_files)
+	cfg.save("user://knockout_music.cfg")
+
+func _load_music() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load("user://knockout_music.cfg") == OK:
+		music_volume = float(cfg.get_value("audio", "music_volume", 0.65))
+		music_enabled = bool(cfg.get_value("audio", "music_enabled", true))
+		music_files = cfg.get_value("audio", "files", {})
