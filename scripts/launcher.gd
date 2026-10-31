@@ -6,6 +6,9 @@ var chosen: Array = []
 var panel: VBoxContainer
 var name_edit: LineEdit
 var status: Label
+var music_dialog: FileDialog
+var music_slot := "Opening Theme"
+const MUSIC_SLOTS := ["Opening Theme", "KNOCKOUT Selection SFX", "KNOCKOUT Question Music", "Regular Question", "Final Knockout", "Sudden Death", "Champion Fanfare"]
 
 func _ready() -> void:
 	_load_roster()
@@ -46,10 +49,11 @@ func _clear() -> void:
 func _main_menu() -> void:
 	_clear()
 	_label("K N O C K O U T", true)
-	_label("One show. Nine contestants. Seven Terminators.")
+	_label("One show. Nine contestants. Six KNOCKOUTS.")
 	_button("PLAY KNOCKOUT", _choose_players)
 	_button("CREATE CONTESTANT", _create_screen)
 	_button("MANAGE CONTESTANTS", _manage_screen)
+	_button("IMPORT MUSIC / SFX", _audio_screen)
 	_button("QUIT", func(): get_tree().quit())
 
 func _create_screen() -> void:
@@ -148,3 +152,41 @@ func _save_roster() -> void:
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file != null:
 		file.store_string(JSON.stringify(roster))
+
+func _audio_screen() -> void:
+	_clear()
+	_label("KNOCKOUT AUDIO IMPORT", true)
+	_label("Choose a cue, then import your MP3, OGG or WAV file.")
+	for slot in MUSIC_SLOTS:
+		_button("IMPORT — " + slot, _open_audio.bind(slot))
+	_button("BACK", _main_menu)
+
+func _open_audio(slot: String) -> void:
+	music_slot = slot
+	music_dialog = FileDialog.new()
+	music_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	music_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	music_dialog.use_native_dialog = true
+	music_dialog.add_filter("*.mp3, *.ogg, *.wav", "Audio files")
+	music_dialog.file_selected.connect(_import_audio)
+	music_dialog.close_requested.connect(func(): music_dialog.queue_free())
+	add_child(music_dialog)
+	music_dialog.popup_centered_ratio(0.7)
+
+func _import_audio(path: String) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load("user://knockout_music.cfg")
+	var files: Dictionary = cfg.get_value("audio", "files", {})
+	var dir := "user://imported_audio/"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
+	var target := dir + music_slot.to_snake_case() + "." + path.get_extension().to_lower()
+	var err := DirAccess.copy_absolute(path, ProjectSettings.globalize_path(target))
+	if err == OK:
+		files[music_slot] = ProjectSettings.globalize_path(target)
+		cfg.set_value("audio", "files", files)
+		cfg.save("user://knockout_music.cfg")
+		_audio_screen()
+		_label("Imported: " + music_slot)
+	else:
+		_label("Import failed (error %d)." % err)
+	music_dialog.queue_free()
