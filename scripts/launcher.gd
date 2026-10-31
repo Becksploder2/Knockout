@@ -135,9 +135,9 @@ func _start_game() -> void:
 	if scene == null:
 		_label("Gameplay scene could not load. Please report this build.")
 		return
-	var result := get_tree().change_scene_to_packed(scene)
-	if result != OK:
-		_label("Gameplay could not start. Error %d" % result)
+	_label("Starting KNOCKOUT studio...")
+	# Defer scene replacement until the current button signal finishes.
+	get_tree().call_deferred("change_scene_to_packed", scene)
 
 func _load_roster() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
