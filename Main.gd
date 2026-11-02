@@ -1,10 +1,11 @@
+extends Control
+
 func _display_name(index: int) -> String:
 	var full_name: String = str(players[index]["name"]).strip_edges()
 	if bool(players[index]["ai"]):
 		return full_name.get_slice(" ", 0)
 	return full_name
 
-extends Control
 
 var pot := 25000
 var episode := 1
@@ -264,6 +265,32 @@ func _process(delta: float) -> void:
 			if spotlight_steps >= 23:
 				_finish_spotlight()
 		return
+	if phase == "escape_select":
+		escape_clock += delta
+		if escape_clock >= 0.12:
+			escape_clock = 0.0
+			escape_steps += 1
+			spotlight_index = randi_range(0, 8)
+			if escape_steps >= 24:
+				spotlight_index = escape_selected
+				champ = escape_selected
+				phase = "escape_choose"
+				host_banner.text = "ARIANNA: %s, you have 60 seconds to clear the board!" % _display_name(champ)
+				if studio_spotlight != null:
+					studio_spotlight.visible = false
+				spotlight_index = -1
+			elif studio_spotlight != null:
+				studio_spotlight.position = _square_light_position(spotlight_index)
+			render()
+		return
+	if phase == "escape_choose" or phase == "escape_panel" or phase == "escape_champion":
+		var previous_second: int = int(ceil(escape_time))
+		escape_time = maxf(0.0, escape_time - delta)
+		if escape_time <= 0.0:
+			_finish_escape(false)
+			return
+		if int(ceil(escape_time)) != previous_second:
+			render()
 	if phase == "questions" and round_number <= 2 and round_questions >= 3 and terminators_this_round < 3:
 		_begin_host_terminator()
 		return
