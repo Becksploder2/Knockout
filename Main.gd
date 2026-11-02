@@ -426,6 +426,7 @@ func submit_answer() -> void:
 					opponents.append(i)
 			freeze_target = int(opponents.pick_random()) if not opponents.is_empty() else -1
 		else:
+			freeze_target = -1
 			players[buzz]["locked"] = true
 		phase = "questions"
 		round_questions += 1
