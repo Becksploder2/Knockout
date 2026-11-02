@@ -45,6 +45,9 @@ var selected_cue := "Main Menu"
 var menu: VBoxContainer
 var studio_view: SubViewportContainer
 var studio_root: Node3D
+var ai_clock: float = 0.0
+var human_names: Array = []
+var host_banner: Label
 const CUES := ["Main Menu", "Host Entrance", "Opening Round", "Terminator", "Final Knockout", "Sudden Death", "Jackpot Win", "Elimination"]
 
 
@@ -111,20 +114,26 @@ func _ready() -> void:
 		var status_node := get_node_or_null("FallbackStatus") as Label
 		if status_node != null:
 			status_node.text = "BOARD ERROR: Expected 9 contestants, found %d." % grid.get_child_count()
-	# 3D studio temporarily disabled until the core board startup is verified.
-	# Launcher already handles menus and roster selection.
-	# Enter the contestant board immediately.
+	# The studio is an optional visual layer; gameplay remains usable if it fails.
+	_build_studio_behind_board()
+	host_banner = Label.new()
+	host_banner.text = "ARIANNA DAWSON  |  Welcome to KNOCKOUT!"
+	host_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	host_banner.add_theme_font_size_override("font_size", 23)
+	main.add_child(host_banner)
+
 
 func new_episode() -> void:
 	players.clear()
 	for i in range(9):
-		players.append({"name":"Player %d" % (i+1), "bank":0, "alive":true, "locked":false})
+		players.append({"name":"Player %d" % (i+1), "bank":0, "alive":true, "locked":false, "ai":true})
 	var lineup_file := FileAccess.open("user://knockout_lineup.json", FileAccess.READ)
 	if lineup_file != null:
 		var lineup: Variant = JSON.parse_string(lineup_file.get_as_text())
 		if lineup is Array:
 			for i in range(min(9, lineup.size())):
 				players[i]["name"] = str(lineup[i])
+				players[i]["ai"] = str(lineup[i]).begins_with("AI Contestant")
 	if episode > 1:
 		players[4]["name"] = "Returning Champion"
 	pot = carry
@@ -135,6 +144,49 @@ func new_episode() -> void:
 	round_number = 1
 	terminators_this_round = 0
 	render()
+
+
+func _process(delta: float) -> void:
+	if players.size() != 9 or answer_field == null:
+		return
+	ai_clock += delta
+	if ai_clock < 5.0:
+		return
+	ai_clock = 0.0
+	if phase == "questions":
+		var candidates: Array = []
+		for i in range(9):
+			if players[i]["alive"] and not players[i]["locked"] and players[i]["ai"]:
+				candidates.append(i)
+		if not candidates.is_empty():
+			select_player(int(candidates.pick_random()))
+	elif phase == "answer" and buzz >= 0 and players[buzz]["ai"]:
+		answer_field.text = _ai_answer()
+		submit_answer()
+	elif phase == "terminator" and buzz < 0 and pair.size() == 2:
+		var ai_pair: Array = []
+		for index in pair:
+			if players[int(index)]["ai"]:
+				ai_pair.append(index)
+		if not ai_pair.is_empty():
+			buzz = int(ai_pair.pick_random())
+			answer_field.text = _ai_answer()
+			submit_answer()
+	elif phase == "final" and final_cursor < final_tied.size():
+		var finalist: int = int(final_tied[final_cursor])
+		if players[finalist]["ai"]:
+			var wager: int = randi_range(0, int(players[finalist]["bank"]))
+			answer_field.text = "%d|%s" % [wager, _ai_answer()]
+			submit_final()
+	elif phase == "bonus" and champ >= 0 and champ < players.size() and players[champ]["ai"]:
+		answer_field.text = _ai_answer()
+		submit_answer()
+
+func _ai_answer() -> String:
+	# Difficulty baseline: approximately 70 percent correct.
+	if randf() < 0.70:
+		return str(questions[question_index % questions.size()][1])
+	return "Incorrect AI response"
 
 func living() -> Array:
 	var a: Array = []
@@ -167,7 +219,7 @@ func render() -> void:
 			state = "LOCKED OUT"
 		if pair.has(i):
 			state = "TERMINATOR"
-		b.text = "%s  |  $%d\n%s" % [p["name"], p["bank"], state]
+		b.text = "%s%s  |  $%d\n%s" % [p["name"], " [AI]" if p["ai"] else " [YOU]", p["bank"], state]
 		b.disabled = not p["alive"] or (phase == "questions" and p["locked"])
 		b.pressed.connect(select_player.bind(i))
 		grid.add_child(b)
