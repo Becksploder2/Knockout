@@ -141,8 +141,12 @@ func new_episode() -> void:
 		var lineup: Variant = JSON.parse_string(lineup_file.get_as_text())
 		if lineup is Array:
 			for i in range(min(9, lineup.size())):
-				players[i]["name"] = str(lineup[i])
-				players[i]["ai"] = str(lineup[i]).begins_with("AI Contestant")
+				if lineup[i] is Dictionary:
+					players[i]["name"] = str(lineup[i].get("name", "Contestant"))
+					players[i]["ai"] = bool(lineup[i].get("ai", true))
+				else:
+					players[i]["name"] = str(lineup[i])
+					players[i]["ai"] = str(lineup[i]).begins_with("AI Contestant")
 	if episode > 1:
 		players[4]["name"] = "Returning Champion"
 	pot = carry
@@ -263,7 +267,7 @@ func render() -> void:
 		if spotlight_index == i or spotlight_index_b == i:
 			state = "SPOTLIGHT!"
 			b.add_theme_color_override("font_color", Color("#ffed8c"))
-		b.text = "%s%s  |  $%d\n%s" % [p["name"], " [AI]" if p["ai"] else " [YOU]", p["bank"], state]
+		b.text = "%s\n$%d  |  %s" % [p["name"], p["bank"], state]
 		b.disabled = not p["alive"] or (phase == "questions" and p["locked"])
 		b.pressed.connect(select_player.bind(i))
 		grid.add_child(b)
