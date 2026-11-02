@@ -879,9 +879,9 @@ func _build_studio() -> void:
 	studio_root = Node3D.new()
 	viewport.add_child(studio_root)
 	var camera := Camera3D.new()
-	camera.position = Vector3(0.0, 8.0, 23.5)
-	camera.fov = 76.0
-	camera.look_at_from_position(camera.position, Vector3(0, 7.2, -7.4), Vector3.UP)
+	camera.position = Vector3(0.0, 8.0, 17.8)
+	camera.fov = 79.0
+	camera.look_at_from_position(camera.position, Vector3(1.0, 8.0, -7.4), Vector3.UP)
 	studio_root.add_child(camera)
 	camera.current = true
 	var light := DirectionalLight3D.new()
@@ -1027,7 +1027,18 @@ func _build_studio() -> void:
 	# Refresh 3D nameplates after the stage is constructed.
 	render()
 	# Downstage podiums, deliberately separated from the contestant wall.
-	_studio_box(Vector3(-10.6, 0.6, 1.8), Vector3(3.2, 1.7, 1.7), Color("#b28b44"))
+	# Arianna's freestanding lectern: tapered body, illuminated front and slanted top.
+	_studio_box(Vector3(-10.6, 0.95, 1.85), Vector3(2.35, 1.9, 1.18), Color("#13234c"))
+	_studio_box(Vector3(-10.6, 1.98, 1.76), Vector3(2.9, 0.18, 1.55), Color("#d8ad57"))
+	_studio_box(Vector3(-10.6, 1.12, 2.46), Vector3(1.92, 1.22, 0.08), Color("#e5b959"))
+	_studio_box(Vector3(-10.6, 1.12, 2.52), Vector3(1.72, 1.02, 0.09), Color("#152f76"))
+	var lectern_logo := Label3D.new()
+	lectern_logo.text = "KNOCKOUT"
+	lectern_logo.position = Vector3(-10.6, 1.15, 2.65)
+	lectern_logo.pixel_size = 0.004
+	lectern_logo.font_size = 60
+	lectern_logo.modulate = Color("#ffe5a0")
+	studio_root.add_child(lectern_logo)
 	_studio_box(Vector3(-3.5, 0.65, 5), Vector3(0.85, 1.3, 0.85), Color("#b8242f"))
 	_studio_box(Vector3(-3.5, 1.36, 5), Vector3(0.9, 0.15, 0.9), Color("#ff3344"))
 	_studio_box(Vector3(-0.6, 0.6, 5), Vector3(2.2, 1.7, 1.5), Color("#244aa2"))
