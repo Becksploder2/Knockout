@@ -105,6 +105,7 @@ var spotlight_steps: int = 0
 var spotlight_target: Array = []
 var studio_spotlight: OmniLight3D
 var studio_spotlight_b: OmniLight3D
+var square_labels: Array = []
 const CUES := ["Main Menu", "Host Entrance", "Opening Round", "Terminator", "Final Knockout", "Sudden Death", "Jackpot Win", "Elimination"]
 
 
@@ -148,6 +149,7 @@ func _ready() -> void:
 	grid = GridContainer.new()
 	grid.columns = 3
 	main.add_child(grid)
+	grid.hide()
 	question = Label.new()
 	question.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	question.add_theme_font_size_override("font_size", 20)
@@ -356,10 +358,19 @@ func render() -> void:
 		b.disabled = not p["alive"] or (phase == "questions" and p["locked"])
 		b.pressed.connect(select_player.bind(i))
 		grid.add_child(b)
+	if square_labels.size() == 9:
+		for i in range(9):
+			var nameplate: Label3D = square_labels[i]
+			var contestant: Dictionary = players[i]
+			nameplate.text = "%s\n$%d | %s" % [str(contestant["name"]), int(contestant["bank"]), "ELIMINATED" if not contestant["alive"] else "LOCKED" if contestant["locked"] else "ACTIVE"]
+			nameplate.modulate = Color("#ffdf76") if spotlight_index == i or spotlight_index_b == i else Color.WHITE
 	for n in actions.get_children():
 		actions.remove_child(n)
 		n.queue_free()
 	if phase == "questions":
+		for i in range(9):
+			if not players[i]["ai"] and players[i]["alive"] and not players[i]["locked"]:
+				add_button("BUZZ IN — %s" % str(players[i]["name"]), select_player.bind(i))
 		question.text = _current_question()[1]
 		if round_number <= 2:
 			question.text = "ARIANNA: The Terminator activates automatically after three questions!" if round_questions >= 3 else question.text
@@ -370,6 +381,9 @@ func render() -> void:
 	elif phase == "spotlight":
 		question.text = "TERMINATOR SELECTING CONTESTANTS..."
 	elif phase == "terminator":
+		for index in pair:
+			if not players[int(index)]["ai"]:
+				add_button("BUZZ IN — %s" % str(players[int(index)]["name"]), select_player.bind(int(index)))
 		question.text = "TERMINATOR: " + questions[question_index % questions.size()][0]
 		add_button("Submit buzzer answer", submit_answer)
 	elif phase == "final":
@@ -741,6 +755,17 @@ func _build_studio() -> void:
 			_studio_box(Vector3(x, y, -11), Vector3(4.35, 2.3, 0.5), accent)
 			_studio_box(Vector3(x, y, -10.69), Vector3(4.0, 2.0, 0.12), Color("#101f3d"))
 			_studio_box(Vector3(x, y - 0.84, -10.5), Vector3(3.7, 0.2, 0.45), accent)
+			var nameplate := Label3D.new()
+			nameplate.position = Vector3(x, y, -10.35)
+			nameplate.pixel_size = 0.008
+			nameplate.font_size = 42
+			nameplate.outline_size = 8
+			nameplate.modulate = Color.WHITE
+			nameplate.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			studio_root.add_child(nameplate)
+			square_labels.append(nameplate)
+	# Refresh 3D nameplates after the stage is constructed.
+	render()
 	# Downstage podiums, deliberately separated from the contestant wall.
 	_studio_box(Vector3(-6.4, 0.6, 5), Vector3(3.2, 1.7, 1.7), Color("#b28b44"))
 	_studio_box(Vector3(-3.5, 0.65, 5), Vector3(0.85, 1.3, 0.85), Color("#b8242f"))
