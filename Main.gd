@@ -964,13 +964,13 @@ func _build_studio() -> void:
 			square_status_labels.append(statusplate)
 	# Physical category display mounted above the contestant bays.
 	stage_category_board = Label3D.new()
-	stage_category_board.position = Vector3(12.0, 7.0, -7.0)
+	stage_category_board.position = Vector3(11.2, 7.0, -7.0)
 	stage_category_board.pixel_size = 0.008
 	stage_category_board.font_size = 62
 	stage_category_board.outline_size = 12
 	stage_category_board.modulate = Color("#ffe18d")
 	studio_root.add_child(stage_category_board)
-	_studio_box(Vector3(12.0, 7.0, -7.4), Vector3(6.8, 1.3, 0.25), Color("#152c70"))
+	_studio_box(Vector3(11.2, 7.0, -7.4), Vector3(7.5, 1.3, 0.25), Color("#152c70"))
 	# Refresh 3D nameplates after the stage is constructed.
 	render()
 	# Downstage podiums, deliberately separated from the contestant wall.
@@ -979,10 +979,9 @@ func _build_studio() -> void:
 	_studio_box(Vector3(-3.5, 1.36, 5), Vector3(0.9, 0.15, 0.9), Color("#ff3344"))
 	_studio_box(Vector3(-0.6, 0.6, 5), Vector3(2.2, 1.7, 1.5), Color("#244aa2"))
 	# Arianna Dawson: procedural 3D host avatar, visible behind the left podium.
-	if not _studio_texture_panel("res://knockout_concept_assets/arianna_concept.png", Vector3(-10.8, 2.1, 4.0), Vector2(2.5, 3.5), true):
-		_build_arianna_avatar(Vector3(-10.8, 0.0, 4.0))
-	_studio_texture_panel("res://knockout_concept_assets/contestant_wall.png", Vector3(0, 5.6, -8.65), Vector2(16.0, 10.0), false)
-	_studio_texture_panel("res://knockout_concept_assets/category_wall.png", Vector3(12.0, 4.5, -8.7), Vector2(6.5, 9.0), false)
+	if not _studio_texture_panel("res://knockout_concept_assets/arianna_game.svg", Vector3(-9.0, 2.2, 3.4), Vector2(2.9, 4.3), true):
+		_build_arianna_avatar(Vector3(-9.0, 0.0, 3.4))
+	_studio_texture_panel("res://knockout_concept_assets/studio_game.svg", Vector3(0, 6.0, -10.9), Vector2(29.0, 12.0), false)
 
 func _studio_box(pos: Vector3, dimensions: Vector3, color: Color) -> void:
 	var node := MeshInstance3D.new()
