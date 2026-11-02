@@ -131,13 +131,8 @@ func _start_game() -> void:
 		return
 	file.store_string(JSON.stringify(names))
 	file.close()
-	var scene := load("res://Main.tscn") as PackedScene
-	if scene == null:
-		_label("Gameplay scene could not load. Please report this build.")
-		return
-	_label("Starting KNOCKOUT studio...")
-	# Defer scene replacement until the current button signal finishes.
-	call_deferred("_enter_board", scene)
+	_label("Opening nine-contestant board...")
+	call_deferred("_enter_board")
 
 func _load_roster() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
@@ -192,7 +187,20 @@ func _import_audio(path: String) -> void:
 		_label("Import failed (error %d)." % err)
 	music_dialog.queue_free()
 
-func _enter_board(scene: PackedScene) -> void:
-	var result: Error = get_tree().change_scene_to_packed(scene)
-	if result != OK:
-		_label("ERROR: Board transition failed (%d)." % result)
+func _enter_board() -> void:
+	var scene_path := "res://Main.tscn"
+	if not ResourceLoader.exists(scene_path):
+		_label("ERROR: Main.tscn is missing from the game package.")
+		return
+	var scene: PackedScene = load(scene_path) as PackedScene
+	if scene == null:
+		_label("ERROR: Gameplay scene failed to parse or load.")
+		return
+	var board := scene.instantiate()
+	if board == null:
+		_label("ERROR: Gameplay board could not be instantiated.")
+		return
+	# Attach and initialize the board before removing the launcher.
+	get_tree().root.add_child(board)
+	get_tree().current_scene = board
+	queue_free()
