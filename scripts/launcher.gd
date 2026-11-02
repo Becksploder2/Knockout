@@ -119,17 +119,34 @@ func _toggle(index: int) -> void:
 		chosen.append(index)
 	_choose_players()
 
+const AI_STAGE_NAMES := ["Morgan Hayes", "Jordan Blake", "Casey Bennett", "Taylor Reed", "Alex Morgan", "Jamie Carter", "Riley Brooks", "Drew Parker", "Sam Ellis", "Harper Quinn", "Avery Lane", "Cameron Wells"]
+
 func _start_game() -> void:
-	var names: Array = []
+	var lineup: Array = []
+	var used_names: Array = []
 	for index in chosen:
-		names.append(str(roster[index]["name"]))
-	while names.size() < 9:
-		names.append("AI Contestant %d" % (names.size() + 1))
+		var player_name: String = str(roster[int(index)]["name"])
+		lineup.append({"name": player_name, "ai": false})
+		used_names.append(player_name.to_lower())
+	# Fill with named AI contestants, preferring unselected saved roster members.
+	var candidates: Array = []
+	for entry in roster:
+		var candidate_name: String = str(entry.get("name", "")).strip_edges()
+		if not candidate_name.is_empty() and not used_names.has(candidate_name.to_lower()):
+			candidates.append(candidate_name)
+	for candidate_name in AI_STAGE_NAMES:
+		if not used_names.has(candidate_name.to_lower()) and not candidates.has(candidate_name):
+			candidates.append(candidate_name)
+	candidates.shuffle()
+	while lineup.size() < 9 and not candidates.is_empty():
+		var ai_name: String = str(candidates.pop_back())
+		lineup.append({"name": ai_name, "ai": true})
+		used_names.append(ai_name.to_lower())
 	var file := FileAccess.open("user://knockout_lineup.json", FileAccess.WRITE)
 	if file == null:
 		_label("Could not save the contestant lineup.")
 		return
-	file.store_string(JSON.stringify(names))
+	file.store_string(JSON.stringify(lineup))
 	file.close()
 	_label("Opening nine-contestant board...")
 	call_deferred("_enter_board")
