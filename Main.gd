@@ -50,15 +50,7 @@ const CUES := ["Main Menu", "Host Entrance", "Opening Round", "Terminator", "Fin
 
 func _ready() -> void:
 	randomize()
-	var fallback := get_node_or_null("FallbackBackground")
-	if fallback != null:
-		fallback.queue_free()
-	var fallback_title := get_node_or_null("FallbackTitle")
-	if fallback_title != null:
-		fallback_title.queue_free()
-	var fallback_status := get_node_or_null("FallbackStatus")
-	if fallback_status != null:
-		fallback_status.queue_free()
+	# Keep the loading overlay visible until the board has rendered successfully.
 	# Create the interactive board first; initialize 3D after the first frame.
 	var bg := ColorRect.new()
 	bg.color = Color(0.015, 0.02, 0.05, 0.28)
@@ -109,6 +101,16 @@ func _ready() -> void:
 	add_child(music_dialog)
 	_load_music()
 	new_episode()
+	# Remove the loading overlay only after all nine contestant controls exist.
+	if grid.get_child_count() == 9:
+		for node_name in ["FallbackBackground", "FallbackTitle", "FallbackStatus"]:
+			var fallback_node := get_node_or_null(node_name)
+			if fallback_node != null:
+				fallback_node.queue_free()
+	else:
+		var status_node := get_node_or_null("FallbackStatus") as Label
+		if status_node != null:
+			status_node.text = "BOARD ERROR: Expected 9 contestants, found %d." % grid.get_child_count()
 	# 3D studio temporarily disabled until the core board startup is verified.
 	# Launcher already handles menus and roster selection.
 	# Enter the contestant board immediately.
