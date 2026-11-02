@@ -879,9 +879,9 @@ func _build_studio() -> void:
 	studio_root = Node3D.new()
 	viewport.add_child(studio_root)
 	var camera := Camera3D.new()
-	camera.position = Vector3(-0.7, 6.5, 13.7)
-	camera.fov = 74.0
-	camera.look_at_from_position(camera.position, Vector3(0, 4.7, -5.2), Vector3.UP)
+	camera.position = Vector3(0.0, 6.0, 21.5)
+	camera.fov = 76.0
+	camera.look_at_from_position(camera.position, Vector3(0, 5.3, -7.4), Vector3.UP)
 	studio_root.add_child(camera)
 	camera.current = true
 	var light := DirectionalLight3D.new()
@@ -920,7 +920,7 @@ func _build_studio() -> void:
 		var accent_color: Color = Color("#31d3ff") if column % 3 == 0 else Color("#f7ae3b") if column % 3 == 1 else Color("#f05bc1")
 		_studio_box(Vector3(float(column - 7) * 2.0, 6.0, -11.2), Vector3(0.11, 12.8, 0.22), accent_color)
 	# Original branded cyc wall and illuminated stage framing.
-	_studio_box(Vector3(0, 6.0, -12.1), Vector3(30, 14, 0.5), Color("#10172e"))
+	_studio_box(Vector3(0, 6.0, -12.1), Vector3(35, 14, 0.5), Color("#10172e"))
 	_studio_box(Vector3(0, 11.6, -10.7), Vector3(18.8, 0.6, 0.55), Color("#f6bb47"))
 	_studio_box(Vector3(0, 0.15, -7.8), Vector3(20.0, 0.45, 4.2), Color("#172a50"))
 	for side in [-1, 1]:
@@ -936,18 +936,18 @@ func _build_studio() -> void:
 		studio_root.add_child(wash)
 	for row_index in range(3):
 		for col_index in range(3):
-			var x: float = float(col_index - 1) * 5.0
-			var y: float = 7.0 - float(row_index) * 2.7
+			var x: float = float(col_index - 1) * 4.1 + 0.3
+			var y: float = 8.1 - float(row_index) * 2.7
 			var champion: bool = row_index == 1 and col_index == 1
 			var accent: Color = Color("#ffcb62") if champion else Color("#218bff")
 			# Each cell is a framed contestant bay rather than a flat floating panel.
-			_studio_box(Vector3(x, y, -8.35), Vector3(4.85, 2.55, 0.65), Color("#b58c39"))
-			_studio_box(Vector3(x, y, -8), Vector3(4.65, 2.3, 0.5), accent)
-			_studio_box(Vector3(x, y, -7.69), Vector3(4.42, 2.0, 0.12), Color("#101f3d"))
+			_studio_box(Vector3(x, y, -8.35), Vector3(3.95, 2.55, 0.65), Color("#b58c39"))
+			_studio_box(Vector3(x, y, -8), Vector3(3.8, 2.3, 0.5), accent)
+			_studio_box(Vector3(x, y, -7.69), Vector3(3.6, 2.0, 0.12), Color("#101f3d"))
 			_studio_box(Vector3(x, y - 0.84, -7.5), Vector3(3.7, 0.2, 0.45), accent)
 			# Chase-style illuminated lower-third: bold name over a separate cash strip.
-			_studio_box(Vector3(x, y - 0.35, -7.36), Vector3(4.25, 1.15, 0.16), Color("#07122e"))
-			_studio_box(Vector3(x, y - 0.99, -7.32), Vector3(4.25, 0.32, 0.18), Color("#e6ad36"))
+			_studio_box(Vector3(x, y - 0.35, -7.36), Vector3(3.5, 1.15, 0.16), Color("#07122e"))
+			_studio_box(Vector3(x, y - 0.99, -7.32), Vector3(3.5, 0.32, 0.18), Color("#e6ad36"))
 			var nameplate := Label3D.new()
 			nameplate.position = Vector3(x, y - 0.27, -7.18)
 			nameplate.pixel_size = 0.008
@@ -972,24 +972,24 @@ func _build_studio() -> void:
 			square_status_labels.append(statusplate)
 	# Physical category display mounted above the contestant bays.
 	stage_category_board = Label3D.new()
-	stage_category_board.position = Vector3(11.2, 7.0, -7.0)
-	stage_category_board.pixel_size = 0.008
-	stage_category_board.font_size = 62
+	stage_category_board.position = Vector3(11.7, 7.0, -6.8)
+	stage_category_board.pixel_size = 0.004
+	stage_category_board.font_size = 52
 	stage_category_board.outline_size = 12
 	stage_category_board.modulate = Color("#ffe18d")
 	studio_root.add_child(stage_category_board)
-	_studio_box(Vector3(11.2, 7.0, -7.4), Vector3(7.5, 1.3, 0.25), Color("#152c70"))
+	_studio_box(Vector3(11.7, 7.0, -7.4), Vector3(7.0, 5.8, 0.25), Color("#152c70"))
 	# Refresh 3D nameplates after the stage is constructed.
 	render()
 	# Downstage podiums, deliberately separated from the contestant wall.
-	_studio_box(Vector3(-10.8, 0.6, 5), Vector3(3.2, 1.7, 1.7), Color("#b28b44"))
+	_studio_box(Vector3(-10.6, 0.6, 1.8), Vector3(3.2, 1.7, 1.7), Color("#b28b44"))
 	_studio_box(Vector3(-3.5, 0.65, 5), Vector3(0.85, 1.3, 0.85), Color("#b8242f"))
 	_studio_box(Vector3(-3.5, 1.36, 5), Vector3(0.9, 0.15, 0.9), Color("#ff3344"))
 	_studio_box(Vector3(-0.6, 0.6, 5), Vector3(2.2, 1.7, 1.5), Color("#244aa2"))
 	# Arianna Dawson: procedural 3D host avatar, visible behind the left podium.
-	if not _studio_texture_panel("res://knockout_concept_assets/arianna_game.svg", Vector3(-9.0, 2.2, 3.4), Vector2(2.9, 4.3), true):
-		_build_arianna_avatar(Vector3(-9.0, 0.0, 3.4))
-	_studio_texture_panel("res://knockout_concept_assets/studio_game.svg", Vector3(0, 6.0, -10.9), Vector2(29.0, 12.0), false)
+	if not _studio_texture_panel("res://knockout_concept_assets/arianna_game.svg", Vector3(-10.6, 2.7, 0.6), Vector2(2.9, 4.3), true):
+		_build_arianna_avatar(Vector3(-10.6, 0.0, 0.6))
+	_studio_texture_panel("res://knockout_concept_assets/studio_game.svg", Vector3(0, 6.0, -11.65), Vector2(34.0, 13.0), false)
 
 func _studio_box(pos: Vector3, dimensions: Vector3, color: Color) -> void:
 	var node := MeshInstance3D.new()
