@@ -51,10 +51,12 @@ var host_banner: Label
 var round_questions: int = 0
 var terminator_running: bool = false
 var spotlight_index: int = -1
+var spotlight_index_b: int = -1
 var spotlight_clock: float = 0.0
 var spotlight_steps: int = 0
 var spotlight_target: Array = []
 var studio_spotlight: OmniLight3D
+var studio_spotlight_b: OmniLight3D
 const CUES := ["Main Menu", "Host Entrance", "Opening Round", "Terminator", "Final Knockout", "Sudden Death", "Jackpot Win", "Elimination"]
 
 
@@ -153,6 +155,7 @@ func new_episode() -> void:
 	round_questions = 0
 	terminator_running = false
 	spotlight_index = -1
+	spotlight_index_b = -1
 	render()
 
 
@@ -166,10 +169,18 @@ func _process(delta: float) -> void:
 			spotlight_steps += 1
 			var available: Array = living()
 			if not available.is_empty():
-				spotlight_index = int(available.pick_random())
-				if studio_spotlight != null:
-					studio_spotlight.position = Vector3(float(spotlight_index % 3 - 1) * 5.0, 7.0 - float(spotlight_index / 3) * 2.7, -9.6)
-				render()
+				if available.size() >= 2:
+					available.shuffle()
+					spotlight_index = int(available[0])
+					spotlight_index_b = int(available[1])
+					if spotlight_steps >= 23 and spotlight_target.size() == 2:
+						spotlight_index = int(spotlight_target[0])
+						spotlight_index_b = int(spotlight_target[1])
+					if studio_spotlight != null:
+						studio_spotlight.position = _square_light_position(spotlight_index)
+					if studio_spotlight_b != null:
+						studio_spotlight_b.position = _square_light_position(spotlight_index_b)
+					render()
 			if spotlight_steps >= 23:
 				_finish_spotlight()
 		return
@@ -249,7 +260,7 @@ func render() -> void:
 			state = "LOCKED OUT"
 		if pair.has(i):
 			state = "TERMINATOR"
-		if spotlight_index == i:
+		if spotlight_index == i or spotlight_index_b == i:
 			state = "SPOTLIGHT!"
 			b.add_theme_color_override("font_color", Color("#ffed8c"))
 		b.text = "%s%s  |  $%d\n%s" % [p["name"], " [AI]" if p["ai"] else " [YOU]", p["bank"], state]
@@ -344,6 +355,8 @@ func _begin_host_terminator() -> void:
 	terminator_running = true
 	if studio_spotlight != null:
 		studio_spotlight.visible = true
+	if studio_spotlight_b != null:
+		studio_spotlight_b.visible = true
 	phase = "spotlight"
 	spotlight_steps = 0
 	spotlight_clock = 0.0
@@ -354,11 +367,17 @@ func _begin_host_terminator() -> void:
 	_play_cue("KNOCKOUT Selection SFX")
 	render()
 
+func _square_light_position(index: int) -> Vector3:
+	return Vector3(float(index % 3 - 1) * 5.0, 7.0 - float(index / 3) * 2.7, -9.6)
+
 func _finish_spotlight() -> void:
 	terminator_running = false
 	spotlight_index = -1
+	spotlight_index_b = -1
 	if studio_spotlight != null:
 		studio_spotlight.visible = false
+	if studio_spotlight_b != null:
+		studio_spotlight_b.visible = false
 	pair = spotlight_target.duplicate()
 	spotlight_target.clear()
 	terminators_this_round += 1
@@ -597,6 +616,13 @@ func _build_studio() -> void:
 	studio_spotlight.shadow_enabled = false
 	studio_spotlight.visible = false
 	studio_root.add_child(studio_spotlight)
+	studio_spotlight_b = OmniLight3D.new()
+	studio_spotlight_b.light_color = Color("#a6d9ff")
+	studio_spotlight_b.light_energy = 6.0
+	studio_spotlight_b.omni_range = 5.5
+	studio_spotlight_b.shadow_enabled = false
+	studio_spotlight_b.visible = false
+	studio_root.add_child(studio_spotlight_b)
 	var environment := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
