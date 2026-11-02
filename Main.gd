@@ -1075,9 +1075,6 @@ func _build_studio() -> void:
 	lectern_logo.font_size = 60
 	lectern_logo.modulate = Color("#ffe5a0")
 	studio_root.add_child(lectern_logo)
-	_studio_box(Vector3(-3.5, 0.65, 5), Vector3(0.85, 1.3, 0.85), Color("#b8242f"))
-	_studio_box(Vector3(-3.5, 1.36, 5), Vector3(0.9, 0.15, 0.9), Color("#ff3344"))
-	_studio_box(Vector3(-0.6, 0.6, 5), Vector3(2.2, 1.7, 1.5), Color("#244aa2"))
 	# Arianna Dawson: procedural 3D host avatar, visible behind the left podium.
 	if not _studio_texture_panel("res://knockout_concept_assets/arianna_game.svg", Vector3(-10.6, 2.7, 0.6), Vector2(2.9, 4.3), true):
 		_build_arianna_avatar(Vector3(-10.6, 0.0, 0.6))
@@ -1090,6 +1087,10 @@ func _build_studio() -> void:
 			host_pieces.append(child)
 	for piece in host_pieces:
 		piece.reparent(arianna_turntable, true)
+	# Other stage podiums are fixed; only Arianna and her lectern rotate.
+	_studio_box(Vector3(-3.5, 0.65, 5), Vector3(0.85, 1.3, 0.85), Color("#b8242f"))
+	_studio_box(Vector3(-3.5, 1.36, 5), Vector3(0.9, 0.15, 0.9), Color("#ff3344"))
+	_studio_box(Vector3(-0.6, 0.6, 5), Vector3(2.2, 1.7, 1.5), Color("#244aa2"))
 	_studio_texture_panel("res://knockout_concept_assets/studio_game.svg", Vector3(0, 6.0, -11.65), Vector2(34.0, 13.0), false)
 
 func _studio_box(pos: Vector3, dimensions: Vector3, color: Color) -> void:
