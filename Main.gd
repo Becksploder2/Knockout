@@ -219,6 +219,9 @@ func new_episode() -> void:
 	pair.clear()
 	buzz = -1
 	bonus = 0
+	escape_target = -1
+	escape_time = 60.0
+	freeze_target = -1
 	round_number = 1
 	terminators_this_round = 0
 	round_questions = 0
@@ -409,7 +412,7 @@ func render() -> void:
 		question.text = "TERMINATOR: " + _current_question()[1]
 		add_button("Submit buzzer answer", submit_answer)
 	elif phase == "final":
-		question.text = "FINAL KNOCKOUT: %s — Wager (0 to $%d), then lock in answer: %s" % [players[final_tied[final_cursor]]["name"], players[final_tied[final_cursor]]["bank"], questions[question_index % questions.size()][0]]
+		question.text = "FINAL KNOCKOUT: %s — Wager (0 to $%d), then lock in answer: %s" % [players[final_tied[final_cursor]]["name"], players[final_tied[final_cursor]]["bank"], _current_question()[1]]
 		add_button("Submit wager and answer", submit_final)
 	elif phase == "escape_select":
 		question.text = "ARIANNA: The full board is restored! TERMINATOR — SELECT OUR ESCAPE CHALLENGER!"
