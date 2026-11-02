@@ -1,3 +1,9 @@
+func _display_name(index: int) -> String:
+	var full_name: String = str(players[index]["name"]).strip_edges()
+	if bool(players[index]["ai"]):
+		return full_name.get_slice(" ", 0)
+	return full_name
+
 extends Control
 
 var pot := 25000
@@ -381,7 +387,7 @@ func render() -> void:
 		if spotlight_index == i or spotlight_index_b == i:
 			state = "SPOTLIGHT!"
 			b.add_theme_color_override("font_color", Color("#ffed8c"))
-		b.text = "%s\n$%d  |  %s" % [p["name"], p["bank"], state]
+		b.text = "%s\n$%d  |  %s" % [_display_name(i), p["bank"], state]
 		b.disabled = not p["alive"] or (phase == "questions" and (p["locked"] or freeze_target == i))
 		b.pressed.connect(select_player.bind(i))
 		grid.add_child(b)
@@ -389,7 +395,7 @@ func render() -> void:
 		for i in range(9):
 			var nameplate: Label3D = square_labels[i]
 			var contestant: Dictionary = players[i]
-			nameplate.text = str(contestant["name"]).to_upper()
+			nameplate.text = _display_name(i).to_upper()
 			nameplate.modulate = Color("#ffdf76") if spotlight_index == i or spotlight_index_b == i else Color.WHITE
 			if square_bank_labels.size() == 9:
 				square_bank_labels[i].text = "$%s" % str(contestant["bank"])
