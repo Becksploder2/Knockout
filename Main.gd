@@ -22,19 +22,67 @@ var grid: GridContainer
 var actions: HBoxContainer
 var info: Label
 var question: Label
-var questions := [
-["What is the capital of Texas?", "Austin"],
-["How many sides does a hexagon have?", "6"],
-["Which planet is known as the Red Planet?", "Mars"],
-["What is 12 multiplied by 8?", "96"],
-["Which ocean is the largest?", "Pacific"],
-["What is the chemical symbol for gold?", "Au"],
-["What is the capital of France?", "Paris"],
-["How many minutes are in two hours?", "120"],
-["Which sport uses a puck?", "Hockey"],
-["What is the square root of 81?", "9"]
-]
+var questions: Array = [["Geography","What is the capital of Texas?","Austin"],
+["Geography","What is the capital of Canada?","Ottawa"],
+["Geography","Which country is home to the city of Kyoto?","Japan"],
+["Geography","What is the largest ocean on Earth?","Pacific"],
+["Geography","What river flows through London?","Thames"],
+["Geography","Which continent contains Kenya?","Africa"],
+["Geography","What is the capital of France?","Paris"],
+["Geography","What country borders Portugal to the east?","Spain"],
+["Science","What is the chemical symbol for gold?","Au"],
+["Science","Which planet is called the Red Planet?","Mars"],
+["Science","What gas do plants absorb during photosynthesis?","Carbon dioxide"],
+["Science","How many bones are in the typical adult human body?","206"],
+["Science","What force keeps planets in orbit around the Sun?","Gravity"],
+["Science","What is the chemical formula for water?","H2O"],
+["Science","What is the closest star to Earth?","Sun"],
+["Science","What is the hardest naturally occurring mineral?","Diamond"],
+["Sports","How many players are on the court for one basketball team?","5"],
+["Sports","Which sport uses a puck?","Hockey"],
+["Sports","How many bases are on a baseball diamond?","4"],
+["Sports","What is the maximum score with one dart in standard darts?","60"],
+["Sports","How many holes are played in a standard golf round?","18"],
+["Sports","What sport awards a touchdown?","American football"],
+["Sports","What is the standard number of players on a soccer team on the field?","11"],
+["Sports","Which tennis tournament is played on grass in London?","Wimbledon"],
+["History","Who was the first president of the United States?","George Washington"],
+["History","In what year did the Berlin Wall fall?","1989"],
+["History","Which civilization built Machu Picchu?","Inca"],
+["History","What ship sank on its maiden voyage in 1912?","Titanic"],
+["History","Which country gifted the Statue of Liberty to the United States?","France"],
+["History","In what year did World War II end?","1945"],
+["History","What ancient city was buried by Mount Vesuvius?","Pompeii"],
+["History","Who was known as the Maid of Orleans?","Joan of Arc"],
+["Entertainment","What is the name of the cowboy in Toy Story?","Woody"],
+["Entertainment","What fictional city does Batman protect?","Gotham City"],
+["Entertainment","Who wrote the Harry Potter novels?","J. K. Rowling"],
+["Entertainment","What color is the character Shrek?","Green"],
+["Entertainment","What instrument has black and white keys?","Piano"],
+["Entertainment","What is the name of the kingdom in Frozen?","Arendelle"],
+["Entertainment","What is the name of the hobbit played by Elijah Wood?","Frodo"],
+["Entertainment","What is the first name of Sherlock Holmes's friend Watson?","John"],
+["Games & Technology","What company created the original Sonic the Hedgehog game?","Sega"],
+["Games & Technology","What does CPU stand for?","Central Processing Unit"],
+["Games & Technology","What does USB stand for?","Universal Serial Bus"],
+["Games & Technology","Which company released the Nintendo 64?","Nintendo"],
+["Games & Technology","What is the name of Mario's brother?","Luigi"],
+["Games & Technology","Which game features falling blocks called tetrominoes?","Tetris"],
+["Games & Technology","What does HTML stand for?","HyperText Markup Language"],
+["Games & Technology","What color is Pac-Man?","Yellow"],
+["General Knowledge","How many sides does a hexagon have?","6"],
+["General Knowledge","What is 12 multiplied by 8?","96"],
+["General Knowledge","What is the square root of 81?","9"],
+["General Knowledge","How many minutes are in two hours?","120"],
+["General Knowledge","What is the freezing point of water in Celsius?","0"],
+["General Knowledge","How many days are in a leap year?","366"],
+["General Knowledge","What is the Roman numeral for 50?","L"],
+["General Knowledge","How many letters are in the English alphabet?","26"]]
+
 var question_index := 0
+var category_board: Label
+var used_question_ids: Dictionary = {}
+const QUESTION_HISTORY := "user://knockout_used_questions.json"
 var answer_field: LineEdit
 var music_player: AudioStreamPlayer
 var music_files: Dictionary = {}
@@ -62,6 +110,8 @@ const CUES := ["Main Menu", "Host Entrance", "Opening Round", "Terminator", "Fin
 
 func _ready() -> void:
 	randomize()
+	_load_question_history()
+	questions.shuffle()
 	# Keep the loading overlay visible until the board has rendered successfully.
 	# Create the interactive board first; initialize 3D after the first frame.
 	var bg := ColorRect.new()
@@ -90,6 +140,11 @@ func _ready() -> void:
 	info = Label.new()
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main.add_child(info)
+	category_board = Label.new()
+	category_board.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	category_board.add_theme_font_size_override("font_size", 25)
+	category_board.add_theme_color_override("font_color", Color("#ffd36d"))
+	main.add_child(category_board)
 	grid = GridContainer.new()
 	grid.columns = 3
 	main.add_child(grid)
@@ -164,7 +219,7 @@ func new_episode() -> void:
 
 
 func _process(delta: float) -> void:
-	if players.size() != 9 or answer_field == null:
+	if players.size() != 9 or answer_field == null or phase == "question_bank_empty":
 		return
 	if terminator_running:
 		spotlight_clock += delta
@@ -230,8 +285,35 @@ func _process(delta: float) -> void:
 func _ai_answer() -> String:
 	# Difficulty baseline: approximately 70 percent correct.
 	if randf() < 0.70:
-		return str(questions[question_index % questions.size()][1])
+		return str(_current_question()[2])
 	return "Incorrect AI response"
+
+
+func _current_question() -> Array:
+	while question_index < questions.size():
+		var candidate: Array = questions[question_index]
+		if not used_question_ids.has(str(candidate[1])):
+			return candidate
+		question_index += 1
+	return []
+
+func _mark_question_used() -> void:
+	var current: Array = _current_question()
+	if current.is_empty():
+		return
+	used_question_ids[str(current[1])] = true
+	var file := FileAccess.open(QUESTION_HISTORY, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify(used_question_ids))
+
+func _load_question_history() -> void:
+	if not FileAccess.file_exists(QUESTION_HISTORY):
+		return
+	var file := FileAccess.open(QUESTION_HISTORY, FileAccess.READ)
+	if file != null:
+		var parsed: Variant = JSON.parse_string(file.get_as_text())
+		if parsed is Dictionary:
+			used_question_ids = parsed
 
 func living() -> Array:
 	var a: Array = []
@@ -248,6 +330,9 @@ func add_button(t: String, method: Callable) -> void:
 	actions.add_child(b)
 
 func render() -> void:
+	if _current_question().is_empty():
+		phase = "question_bank_empty"
+	category_board.text = "CATEGORY BOARD  |  " + ("QUESTION BANK EXHAUSTED" if phase == "question_bank_empty" else str(_current_question()[0]).to_upper())
 	info.text = "EPISODE %d  |  CASH POT $%d  |  ROUND %d  |  %s" % [episode, pot, round_number, phase.to_upper()]
 	for n in grid.get_children():
 		grid.remove_child(n)
@@ -275,7 +360,7 @@ func render() -> void:
 		actions.remove_child(n)
 		n.queue_free()
 	if phase == "questions":
-		question.text = questions[question_index % questions.size()][0]
+		question.text = _current_question()[1]
 		if round_number <= 2:
 			question.text = "ARIANNA: The Terminator activates automatically after three questions!" if round_questions >= 3 else question.text
 		elif round_number == 3:
@@ -309,6 +394,7 @@ func submit_answer() -> void:
 		return
 	var correct: bool = answer_field.text.strip_edges().to_lower() == str(questions[question_index % questions.size()][1]).to_lower()
 	answer_field.clear()
+	_mark_question_used()
 	question_index += 1
 	if phase == "answer":
 		if correct:
