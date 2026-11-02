@@ -109,7 +109,7 @@ func _ready() -> void:
 	add_child(music_dialog)
 	_load_music()
 	new_episode()
-	call_deferred("_build_studio_behind_board")
+	# 3D studio temporarily disabled until the core board startup is verified.
 	# Launcher already handles menus and roster selection.
 	# Enter the contestant board immediately.
 
