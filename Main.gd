@@ -472,7 +472,7 @@ func _begin_host_terminator() -> void:
 	render()
 
 func _square_light_position(index: int) -> Vector3:
-	return Vector3(float(index % 3 - 1) * 5.0, 7.0 - float(index / 3) * 2.7, -9.6)
+	return Vector3(float(index % 3 - 1) * 5.0, 7.0 - float(index / 3) * 2.7, -6.6)
 
 func _finish_spotlight() -> void:
 	terminator_running = false
@@ -705,8 +705,9 @@ func _build_studio() -> void:
 	studio_root = Node3D.new()
 	viewport.add_child(studio_root)
 	var camera := Camera3D.new()
-	camera.position = Vector3(0, 7.8, 24)
-	camera.look_at_from_position(camera.position, Vector3(0, 4.2, -5), Vector3.UP)
+	camera.position = Vector3(0, 6.7, 17.5)
+	camera.fov = 76.0
+	camera.look_at_from_position(camera.position, Vector3(0, 4.6, -5.8), Vector3.UP)
 	studio_root.add_child(camera)
 	camera.current = true
 	var light := DirectionalLight3D.new()
@@ -738,12 +739,12 @@ func _build_studio() -> void:
 	studio_root.add_child(environment)
 	_studio_box(Vector3(0, -0.4, 0), Vector3(32, 0.7, 28), Color("#11182a"))
 	# Original branded cyc wall and illuminated stage framing.
-	_studio_box(Vector3(0, 6.0, -14.2), Vector3(30, 14, 0.5), Color("#10172e"))
-	_studio_box(Vector3(0, 11.6, -13.7), Vector3(18.8, 0.6, 0.55), Color("#f6bb47"))
-	_studio_box(Vector3(0, 0.15, -10.8), Vector3(20.0, 0.45, 4.2), Color("#172a50"))
+	_studio_box(Vector3(0, 6.0, -11.2), Vector3(30, 14, 0.5), Color("#10172e"))
+	_studio_box(Vector3(0, 11.6, -10.7), Vector3(18.8, 0.6, 0.55), Color("#f6bb47"))
+	_studio_box(Vector3(0, 0.15, -7.8), Vector3(20.0, 0.45, 4.2), Color("#172a50"))
 	for side in [-1, 1]:
-		_studio_box(Vector3(float(side) * 9.9, 5.6, -11.3), Vector3(0.6, 11.3, 1.3), Color("#d9a849"))
-		_studio_box(Vector3(float(side) * 12.4, 5.2, -13.7), Vector3(0.35, 10.0, 0.5), Color("#2266bb"))
+		_studio_box(Vector3(float(side) * 9.9, 5.6, -8.3), Vector3(0.6, 11.3, 1.3), Color("#d9a849"))
+		_studio_box(Vector3(float(side) * 12.4, 5.2, -10.7), Vector3(0.35, 10.0, 0.5), Color("#2266bb"))
 	for row_index in range(3):
 		for col_index in range(3):
 			var x: float = float(col_index - 1) * 5.0
@@ -751,13 +752,13 @@ func _build_studio() -> void:
 			var champion: bool = row_index == 1 and col_index == 1
 			var accent: Color = Color("#ffcb62") if champion else Color("#218bff")
 			# Each cell is a framed contestant bay rather than a flat floating panel.
-			_studio_box(Vector3(x, y, -11.35), Vector3(4.7, 2.55, 0.65), Color("#b58c39"))
-			_studio_box(Vector3(x, y, -11), Vector3(4.35, 2.3, 0.5), accent)
-			_studio_box(Vector3(x, y, -10.69), Vector3(4.0, 2.0, 0.12), Color("#101f3d"))
-			_studio_box(Vector3(x, y - 0.84, -10.5), Vector3(3.7, 0.2, 0.45), accent)
+			_studio_box(Vector3(x, y, -8.35), Vector3(4.7, 2.55, 0.65), Color("#b58c39"))
+			_studio_box(Vector3(x, y, -8), Vector3(4.35, 2.3, 0.5), accent)
+			_studio_box(Vector3(x, y, -7.69), Vector3(4.0, 2.0, 0.12), Color("#101f3d"))
+			_studio_box(Vector3(x, y - 0.84, -7.5), Vector3(3.7, 0.2, 0.45), accent)
 			var nameplate := Label3D.new()
-			nameplate.position = Vector3(x, y, -10.35)
-			nameplate.pixel_size = 0.008
+			nameplate.position = Vector3(x, y, -7.35)
+			nameplate.pixel_size = 0.0065
 			nameplate.font_size = 42
 			nameplate.outline_size = 8
 			nameplate.modulate = Color.WHITE
