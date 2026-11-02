@@ -705,9 +705,9 @@ func _build_studio() -> void:
 	studio_root = Node3D.new()
 	viewport.add_child(studio_root)
 	var camera := Camera3D.new()
-	camera.position = Vector3(0, 6.7, 17.5)
-	camera.fov = 76.0
-	camera.look_at_from_position(camera.position, Vector3(0, 4.6, -5.8), Vector3.UP)
+	camera.position = Vector3(-0.7, 6.5, 13.7)
+	camera.fov = 74.0
+	camera.look_at_from_position(camera.position, Vector3(0, 4.7, -5.2), Vector3.UP)
 	studio_root.add_child(camera)
 	camera.current = true
 	var light := DirectionalLight3D.new()
@@ -731,20 +731,35 @@ func _build_studio() -> void:
 	var environment := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color("#08112d")
+	env.background_color = Color("#090b25")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("#5d7fae")
-	env.ambient_light_energy = 0.5
+	env.ambient_light_color = Color("#8294db")
+	env.ambient_light_energy = 0.85
 	environment.environment = env
 	studio_root.add_child(environment)
 	_studio_box(Vector3(0, -0.4, 0), Vector3(32, 0.7, 28), Color("#11182a"))
+	# Colorful original studio cyclorama: tiered jewel-tone LED wall.
+	for band in range(7):
+		var palette: Array = [Color("#152b86"), Color("#442c9b"), Color("#822b9b"), Color("#b32e76"), Color("#bc443f"), Color("#8a3eac"), Color("#174ca0")]
+		_studio_box(Vector3(0, float(band) * 1.9 + 0.8, -11.6), Vector3(30, 1.85, 0.25), palette[band])
+	for column in range(15):
+		var accent_color: Color = Color("#31d3ff") if column % 3 == 0 else Color("#f7ae3b") if column % 3 == 1 else Color("#f05bc1")
+		_studio_box(Vector3(float(column - 7) * 2.0, 6.0, -11.2), Vector3(0.11, 12.8, 0.22), accent_color)
 	# Original branded cyc wall and illuminated stage framing.
-	_studio_box(Vector3(0, 6.0, -11.2), Vector3(30, 14, 0.5), Color("#10172e"))
+	_studio_box(Vector3(0, 6.0, -12.1), Vector3(30, 14, 0.5), Color("#10172e"))
 	_studio_box(Vector3(0, 11.6, -10.7), Vector3(18.8, 0.6, 0.55), Color("#f6bb47"))
 	_studio_box(Vector3(0, 0.15, -7.8), Vector3(20.0, 0.45, 4.2), Color("#172a50"))
 	for side in [-1, 1]:
 		_studio_box(Vector3(float(side) * 9.9, 5.6, -8.3), Vector3(0.6, 11.3, 1.3), Color("#d9a849"))
 		_studio_box(Vector3(float(side) * 12.4, 5.2, -10.7), Vector3(0.35, 10.0, 0.5), Color("#2266bb"))
+	# Dramatic colored lighting inspired by high-stakes quiz-show production.
+	for light_index in range(6):
+		var wash := OmniLight3D.new()
+		wash.position = Vector3(float(light_index - 3) * 4.2, 10.8, -5.0)
+		wash.light_color = Color("#296bff") if light_index % 3 == 0 else Color("#db39af") if light_index % 3 == 1 else Color("#ffb34d")
+		wash.light_energy = 2.4
+		wash.omni_range = 13.0
+		studio_root.add_child(wash)
 	for row_index in range(3):
 		for col_index in range(3):
 			var x: float = float(col_index - 1) * 5.0
@@ -752,15 +767,15 @@ func _build_studio() -> void:
 			var champion: bool = row_index == 1 and col_index == 1
 			var accent: Color = Color("#ffcb62") if champion else Color("#218bff")
 			# Each cell is a framed contestant bay rather than a flat floating panel.
-			_studio_box(Vector3(x, y, -8.35), Vector3(4.7, 2.55, 0.65), Color("#b58c39"))
-			_studio_box(Vector3(x, y, -8), Vector3(4.35, 2.3, 0.5), accent)
-			_studio_box(Vector3(x, y, -7.69), Vector3(4.0, 2.0, 0.12), Color("#101f3d"))
+			_studio_box(Vector3(x, y, -8.35), Vector3(4.85, 2.55, 0.65), Color("#b58c39"))
+			_studio_box(Vector3(x, y, -8), Vector3(4.65, 2.3, 0.5), accent)
+			_studio_box(Vector3(x, y, -7.69), Vector3(4.42, 2.0, 0.12), Color("#101f3d"))
 			_studio_box(Vector3(x, y - 0.84, -7.5), Vector3(3.7, 0.2, 0.45), accent)
 			var nameplate := Label3D.new()
-			nameplate.position = Vector3(x, y, -7.35)
-			nameplate.pixel_size = 0.0065
-			nameplate.font_size = 42
-			nameplate.outline_size = 8
+			nameplate.position = Vector3(x, y, -7.18)
+			nameplate.pixel_size = 0.012
+			nameplate.font_size = 58
+			nameplate.outline_size = 12
 			nameplate.modulate = Color.WHITE
 			nameplate.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 			studio_root.add_child(nameplate)
@@ -768,7 +783,7 @@ func _build_studio() -> void:
 	# Refresh 3D nameplates after the stage is constructed.
 	render()
 	# Downstage podiums, deliberately separated from the contestant wall.
-	_studio_box(Vector3(-6.4, 0.6, 5), Vector3(3.2, 1.7, 1.7), Color("#b28b44"))
+	_studio_box(Vector3(-10.8, 0.6, 5), Vector3(3.2, 1.7, 1.7), Color("#b28b44"))
 	_studio_box(Vector3(-3.5, 0.65, 5), Vector3(0.85, 1.3, 0.85), Color("#b8242f"))
 	_studio_box(Vector3(-3.5, 1.36, 5), Vector3(0.9, 0.15, 0.9), Color("#ff3344"))
 	_studio_box(Vector3(-0.6, 0.6, 5), Vector3(2.2, 1.7, 1.5), Color("#244aa2"))
