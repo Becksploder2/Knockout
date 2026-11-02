@@ -114,6 +114,8 @@ var spotlight_target: Array = []
 var studio_spotlight: OmniLight3D
 var studio_spotlight_b: OmniLight3D
 var square_labels: Array = []
+var square_bank_labels: Array = []
+var square_status_labels: Array = []
 const CUES := ["Main Menu", "Host Entrance", "Opening Round", "Terminator", "Final Knockout", "Sudden Death", "Jackpot Win", "Elimination"]
 
 
@@ -387,8 +389,12 @@ func render() -> void:
 		for i in range(9):
 			var nameplate: Label3D = square_labels[i]
 			var contestant: Dictionary = players[i]
-			nameplate.text = "%s\n$%d | %s" % [str(contestant["name"]), int(contestant["bank"]), "ELIMINATED" if not contestant["alive"] else "FROZEN" if freeze_target == i and phase == "questions" else "LOCKED" if contestant["locked"] else "ACTIVE"]
+			nameplate.text = str(contestant["name"]).to_upper()
 			nameplate.modulate = Color("#ffdf76") if spotlight_index == i or spotlight_index_b == i else Color.WHITE
+			if square_bank_labels.size() == 9:
+				square_bank_labels[i].text = "$%s" % str(contestant["bank"])
+			if square_status_labels.size() == 9:
+				square_status_labels[i].text = "OUT" if not contestant["alive"] else "FROZEN" if freeze_target == i and phase == "questions" else "LOCKED" if contestant["locked"] else "IN PLAY"
 	for n in actions.get_children():
 		actions.remove_child(n)
 		n.queue_free()
@@ -898,15 +904,31 @@ func _build_studio() -> void:
 			_studio_box(Vector3(x, y, -8), Vector3(4.65, 2.3, 0.5), accent)
 			_studio_box(Vector3(x, y, -7.69), Vector3(4.42, 2.0, 0.12), Color("#101f3d"))
 			_studio_box(Vector3(x, y - 0.84, -7.5), Vector3(3.7, 0.2, 0.45), accent)
+			# Chase-style illuminated lower-third: bold name over a separate cash strip.
+			_studio_box(Vector3(x, y - 0.35, -7.36), Vector3(4.25, 1.15, 0.16), Color("#07122e"))
+			_studio_box(Vector3(x, y - 0.99, -7.32), Vector3(4.25, 0.32, 0.18), Color("#e6ad36"))
 			var nameplate := Label3D.new()
-			nameplate.position = Vector3(x, y, -7.18)
-			nameplate.pixel_size = 0.012
-			nameplate.font_size = 58
-			nameplate.outline_size = 12
+			nameplate.position = Vector3(x, y - 0.27, -7.18)
+			nameplate.pixel_size = 0.008
+			nameplate.font_size = 70
+			nameplate.outline_size = 8
 			nameplate.modulate = Color.WHITE
-			nameplate.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 			studio_root.add_child(nameplate)
 			square_labels.append(nameplate)
+			var cashplate := Label3D.new()
+			cashplate.position = Vector3(x, y - 0.98, -7.16)
+			cashplate.pixel_size = 0.005
+			cashplate.font_size = 46
+			cashplate.modulate = Color("#08142d")
+			studio_root.add_child(cashplate)
+			square_bank_labels.append(cashplate)
+			var statusplate := Label3D.new()
+			statusplate.position = Vector3(x, y + 0.67, -7.16)
+			statusplate.pixel_size = 0.0045
+			statusplate.font_size = 40
+			statusplate.modulate = Color("#ffdb7c")
+			studio_root.add_child(statusplate)
+			square_status_labels.append(statusplate)
 	# Physical category display mounted above the contestant bays.
 	stage_category_board = Label3D.new()
 	stage_category_board.position = Vector3(0, 11.2, -7.0)
