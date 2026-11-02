@@ -207,7 +207,7 @@ func select_player(i: int) -> void:
 func submit_answer() -> void:
 	if phase != "bonus" and buzz < 0:
 		return
-	var correct := answer_field.text.strip_edges().to_lower() == questions[question_index % questions.size()][1].to_lower()
+	var correct: bool = answer_field.text.strip_edges().to_lower() == str(questions[question_index % questions.size()][1]).to_lower()
 	answer_field.clear()
 	question_index += 1
 	if phase == "answer":
