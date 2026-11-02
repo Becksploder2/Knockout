@@ -54,6 +54,7 @@ var spotlight_index: int = -1
 var spotlight_clock: float = 0.0
 var spotlight_steps: int = 0
 var spotlight_target: Array = []
+var studio_spotlight: OmniLight3D
 const CUES := ["Main Menu", "Host Entrance", "Opening Round", "Terminator", "Final Knockout", "Sudden Death", "Jackpot Win", "Elimination"]
 
 
@@ -166,6 +167,8 @@ func _process(delta: float) -> void:
 			var available: Array = living()
 			if not available.is_empty():
 				spotlight_index = int(available.pick_random())
+				if studio_spotlight != null:
+					studio_spotlight.position = Vector3(float(spotlight_index % 3 - 1) * 5.0, 7.0 - float(spotlight_index / 3) * 2.7, -9.6)
 				render()
 			if spotlight_steps >= 23:
 				_finish_spotlight()
@@ -339,6 +342,8 @@ func _begin_host_terminator() -> void:
 	if available.size() <= 3:
 		return
 	terminator_running = true
+	if studio_spotlight != null:
+		studio_spotlight.visible = true
 	phase = "spotlight"
 	spotlight_steps = 0
 	spotlight_clock = 0.0
@@ -352,6 +357,8 @@ func _begin_host_terminator() -> void:
 func _finish_spotlight() -> void:
 	terminator_running = false
 	spotlight_index = -1
+	if studio_spotlight != null:
+		studio_spotlight.visible = false
 	pair = spotlight_target.duplicate()
 	spotlight_target.clear()
 	terminators_this_round += 1
@@ -583,6 +590,13 @@ func _build_studio() -> void:
 	light.rotation_degrees = Vector3(-48, 25, 0)
 	light.light_energy = 1.5
 	studio_root.add_child(light)
+	studio_spotlight = OmniLight3D.new()
+	studio_spotlight.light_color = Color("#ffe9a3")
+	studio_spotlight.light_energy = 6.0
+	studio_spotlight.omni_range = 5.5
+	studio_spotlight.shadow_enabled = false
+	studio_spotlight.visible = false
+	studio_root.add_child(studio_spotlight)
 	var environment := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
