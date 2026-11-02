@@ -1094,3 +1094,31 @@ func setup_dialogue() -> void:
 	dialogue_panel.add_child(dialogue_text)
 	question.hide()
 	host_banner.hide()
+
+func update_dialogue(delta: float) -> void:
+	if dialogue_panel == null:
+		return
+	var source := host_banner.text + "\n" + question.text
+	if source != dialogue_last:
+		dialogue_last = source
+		dialogue_parts.clear()
+		for passage in [host_banner.text, question.text]:
+			var sentence := ""
+			for character in passage:
+				sentence += character
+				if character == "." or character == "!" or character == "?":
+					dialogue_parts.append(sentence.strip_edges())
+					sentence = ""
+			if not sentence.strip_edges().is_empty():
+				dialogue_parts.append(sentence.strip_edges())
+		dialogue_step = 0
+		dialogue_timer = 0.0
+		dialogue_panel.visible = not dialogue_parts.is_empty()
+		if not dialogue_parts.is_empty():
+			dialogue_text.text = dialogue_parts[0]
+	elif dialogue_parts.size() > 1:
+		dialogue_timer += delta
+		if dialogue_timer >= 3.5:
+			dialogue_timer = 0.0
+			dialogue_step = (dialogue_step + 1) % dialogue_parts.size()
+			dialogue_text.text = dialogue_parts[dialogue_step]
