@@ -1,4 +1,10 @@
 extends Control
+var dialogue_panel: PanelContainer
+var dialogue_text: Label
+var dialogue_last := ""
+var dialogue_parts: Array[String] = []
+var dialogue_step := 0
+var dialogue_timer := 0.0
 
 func _display_name(index: int) -> String:
 	var full_name: String = str(players[index]["name"]).strip_edges()
@@ -204,6 +210,7 @@ func _ready() -> void:
 	host_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	host_banner.add_theme_font_size_override("font_size", 23)
 	main.add_child(host_banner)
+	setup_dialogue()
 
 
 func new_episode() -> void:
@@ -241,6 +248,7 @@ func new_episode() -> void:
 
 
 func _process(delta: float) -> void:
+	update_dialogue(delta)
 	if players.size() != 9 or answer_field == null or phase == "question_bank_empty":
 		return
 	if terminator_running:
