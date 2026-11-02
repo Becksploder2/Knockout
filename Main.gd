@@ -945,11 +945,8 @@ func _build_studio() -> void:
 	_studio_box(Vector3(-3.5, 0.65, 5), Vector3(0.85, 1.3, 0.85), Color("#b8242f"))
 	_studio_box(Vector3(-3.5, 1.36, 5), Vector3(0.9, 0.15, 0.9), Color("#ff3344"))
 	_studio_box(Vector3(-0.6, 0.6, 5), Vector3(2.2, 1.7, 1.5), Color("#244aa2"))
-	# Stylized Arianna Dawson: red outfit, blonde hair, glasses.
-	_studio_box(Vector3(-6.4, 2.05, 5), Vector3(0.75, 1.55, 0.45), Color("#b52637"))
-	_studio_box(Vector3(-6.4, 3.15, 5), Vector3(0.6, 0.72, 0.5), Color("#f2c9a2"))
-	_studio_box(Vector3(-6.4, 3.55, 5), Vector3(0.78, 0.25, 0.55), Color("#efc95a"))
-	_studio_box(Vector3(-6.4, 3.17, 5.29), Vector3(0.68, 0.12, 0.08), Color("#1c2230"))
+	# Arianna Dawson: procedural 3D host avatar, visible behind the left podium.
+	_build_arianna_avatar(Vector3(-10.8, 0.0, 4.0))
 
 func _studio_box(pos: Vector3, dimensions: Vector3, color: Color) -> void:
 	var node := MeshInstance3D.new()
@@ -963,3 +960,47 @@ func _studio_box(pos: Vector3, dimensions: Vector3, color: Color) -> void:
 	node.material_override = material
 	node.position = pos
 	studio_root.add_child(node)
+
+func _avatar_ellipsoid(parent: Node3D, at: Vector3, scale_xyz: Vector3, tint: Color) -> void:
+	var mesh_instance := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.5
+	sphere.height = 1.0
+	mesh_instance.mesh = sphere
+	mesh_instance.scale = scale_xyz
+	mesh_instance.position = at
+	var material := StandardMaterial3D.new()
+	material.albedo_color = tint
+	material.roughness = 0.83
+	mesh_instance.material_override = material
+	parent.add_child(mesh_instance)
+
+func _build_arianna_avatar(at: Vector3) -> void:
+	var host := Node3D.new()
+	host.name = "AriannaDawson"
+	host.position = at
+	studio_root.add_child(host)
+	var skin := Color("#efbd9e")
+	var red := Color("#b91537")
+	var hair := Color("#edc474")
+	# Full figure, jacket, blouse, neck and natural oval face.
+	_avatar_ellipsoid(host, Vector3(0, 1.06, 0), Vector3(0.82, 1.35, 0.48), red)
+	_avatar_ellipsoid(host, Vector3(0, 1.52, 0.27), Vector3(0.31, 0.66, 0.08), Color("#111b3c"))
+	_avatar_ellipsoid(host, Vector3(0, 2.08, 0), Vector3(0.23, 0.38, 0.24), skin)
+	_avatar_ellipsoid(host, Vector3(0, 2.69, 0), Vector3(0.68, 0.92, 0.60), skin)
+	# Blonde hair: crown, side locks and swept bangs.
+	_avatar_ellipsoid(host, Vector3(0, 3.08, -0.14), Vector3(0.77, 0.48, 0.66), hair)
+	for side in [-1.0, 1.0]:
+		_avatar_ellipsoid(host, Vector3(side * 0.37, 2.53, -0.14), Vector3(0.25, 1.30, 0.40), hair)
+		_avatar_ellipsoid(host, Vector3(side * 0.52, 1.46, 0), Vector3(0.27, 1.25, 0.30), red)
+		_avatar_ellipsoid(host, Vector3(side * 0.38, 0.93, 0.08), Vector3(0.20, 0.38, 0.23), skin)
+		# Black eyeglass rims and eyes.
+		_avatar_ellipsoid(host, Vector3(side * 0.19, 2.76, 0.302), Vector3(0.31, 0.23, 0.055), Color("#12192c"))
+		_avatar_ellipsoid(host, Vector3(side * 0.19, 2.76, 0.335), Vector3(0.245, 0.16, 0.045), Color("#d8e3ef"))
+		_avatar_ellipsoid(host, Vector3(side * 0.19, 2.76, 0.367), Vector3(0.065, 0.08, 0.03), Color("#34465c"))
+	_avatar_ellipsoid(host, Vector3(0, 2.76, 0.33), Vector3(0.14, 0.06, 0.05), Color("#12192c"))
+	_avatar_ellipsoid(host, Vector3(0, 2.43, 0.31), Vector3(0.27, 0.09, 0.05), Color("#a74452"))
+	# Small visible smile with orthodontic brackets.
+	for tooth in range(4):
+		_avatar_ellipsoid(host, Vector3(-0.12 + tooth * 0.08, 2.44, 0.35), Vector3(0.057, 0.055, 0.022), Color("#f8f7ef"))
+	_avatar_ellipsoid(host, Vector3(0, 2.44, 0.37), Vector3(0.25, 0.012, 0.016), Color("#b0b6c2"))
