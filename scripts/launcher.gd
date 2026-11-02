@@ -190,17 +190,17 @@ func _import_audio(path: String) -> void:
 func _enter_board() -> void:
 	var scene_path := "res://Main.tscn"
 	if not ResourceLoader.exists(scene_path):
-		_label("ERROR: Main.tscn is missing from the game package.")
+		_label("ERROR: Main.tscn missing from the PCK.")
 		return
 	var scene: PackedScene = load(scene_path) as PackedScene
 	if scene == null:
-		_label("ERROR: Gameplay scene failed to parse or load.")
+		_label("ERROR: Main.tscn could not load. Check game script.")
 		return
-	var board := scene.instantiate()
+	var board: Node = scene.instantiate()
 	if board == null:
-		_label("ERROR: Gameplay board could not be instantiated.")
+		_label("ERROR: Main.tscn could not instantiate.")
 		return
-	# Attach and initialize the board before removing the launcher.
-	get_tree().root.add_child(board)
-	get_tree().current_scene = board
-	queue_free()
+	# Replace the launcher in the scene tree after the current UI signal.
+	var result: Error = get_tree().change_scene_to_packed(scene)
+	if result != OK:
+		_label("ERROR: Scene transition returned code %d." % result)
