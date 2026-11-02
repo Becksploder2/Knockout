@@ -1070,3 +1070,27 @@ func _studio_texture_panel(path: String, center: Vector3, dimensions: Vector2, t
 	panel.material_override = mat
 	studio_root.add_child(panel)
 	return true
+
+func setup_dialogue() -> void:
+	dialogue_panel = PanelContainer.new()
+	dialogue_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	dialogue_panel.offset_left = 180.0
+	dialogue_panel.offset_right = -180.0
+	dialogue_panel.offset_top = -130.0
+	dialogue_panel.offset_bottom = -15.0
+	dialogue_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#101d49")
+	style.border_color = Color("#e9ba55")
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(16)
+	style.set_content_margin_all(14)
+	dialogue_panel.add_theme_stylebox_override("panel", style)
+	add_child(dialogue_panel)
+	dialogue_text = Label.new()
+	dialogue_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dialogue_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dialogue_text.add_theme_font_size_override("font_size", 19)
+	dialogue_panel.add_child(dialogue_text)
+	question.hide()
+	host_banner.hide()
