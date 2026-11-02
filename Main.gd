@@ -979,6 +979,35 @@ func _build_studio() -> void:
 	stage_category_board.modulate = Color("#ffe18d")
 	studio_root.add_child(stage_category_board)
 	_studio_box(Vector3(11.7, 7.0, -7.4), Vector3(7.0, 5.8, 0.25), Color("#152c70"))
+	# Studio-wide KNOCKOUT header and original illuminated gold chevrons.
+	_studio_box(Vector3(0.0, 11.6, -8.5), Vector3(15.0, 1.35, 0.25), Color("#101e50"))
+	_studio_box(Vector3(0.0, 12.3, -8.55), Vector3(15.6, 0.13, 0.30), Color("#ffd16a"))
+	_studio_box(Vector3(0.0, 10.85, -8.55), Vector3(15.6, 0.13, 0.30), Color("#ffd16a"))
+	var logo := Label3D.new()
+	logo.text = "K N O C K O U T"
+	logo.position = Vector3(0, 11.55, -8.1)
+	logo.font_size = 105
+	logo.pixel_size = 0.009
+	logo.outline_size = 12
+	logo.modulate = Color("#fff1cb")
+	studio_root.add_child(logo)
+	# The right-hand categories are a physical five-row illuminated LED display.
+	for category_index in range(5):
+		var cy := 9.0 - float(category_index) * 1.08
+		_studio_box(Vector3(11.7, cy, -7.1), Vector3(6.5, 0.93, 0.22), Color("#edb750"))
+		_studio_box(Vector3(11.7, cy, -6.95), Vector3(6.24, 0.72, 0.16), Color("#102d83"))
+		var category_title := Label3D.new()
+		category_title.text = ["HISTORY", "SCIENCE", "POP CULTURE", "SPORTS", "GEOGRAPHY"][category_index]
+		category_title.position = Vector3(11.7, cy, -6.75)
+		category_title.pixel_size = 0.005
+		category_title.font_size = 68
+		category_title.modulate = Color.WHITE
+		studio_root.add_child(category_title)
+	# Floor-mounted light rails and matching purple-blue overhead light truss.
+	for rail in range(4):
+		_studio_box(Vector3(0, 0.05, float(rail) * 2.2 - 4.0), Vector3(29, 0.07, 0.12), Color("#6646e8"))
+	for truss in range(3):
+		_studio_box(Vector3(0, 12.7, -9.0 + float(truss) * 3.2), Vector3(30, 0.12, 0.20), Color("#ba51ec"))
 	# Refresh 3D nameplates after the stage is constructed.
 	render()
 	# Downstage podiums, deliberately separated from the contestant wall.
