@@ -114,6 +114,9 @@ var selected_cue := "Main Menu"
 var menu: VBoxContainer
 var studio_view: SubViewportContainer
 var studio_root: Node3D
+var arianna_turntable: Node3D
+var arianna_facing_contestants := false
+var arianna_last_phase := ""
 var ai_clock: float = 0.0
 var human_names: Array = []
 var host_banner: Label
@@ -249,6 +252,7 @@ func new_episode() -> void:
 
 func _process(delta: float) -> void:
 	update_dialogue(delta)
+	_update_arianna_turntable()
 	if players.size() != 9 or answer_field == null or phase == "question_bank_empty":
 		return
 	if terminator_running:
@@ -1026,6 +1030,38 @@ func _build_studio() -> void:
 		_studio_box(Vector3(0, 12.7, -9.0 + float(truss) * 3.2), Vector3(30, 0.12, 0.20), Color("#ba51ec"))
 	# Refresh 3D nameplates after the stage is constructed.
 	render()
+	# A motorized circular host dais, pivoting around Arianna and her lectern.
+	arianna_turntable = Node3D.new()
+	arianna_turntable.name = "AriannaRotatingPlatform"
+	arianna_turntable.position = Vector3(-10.6, 0.0, 1.8)
+	studio_root.add_child(arianna_turntable)
+	var dais := MeshInstance3D.new()
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = 2.25
+	cylinder.bottom_radius = 2.25
+	cylinder.height = 0.22
+	dais.mesh = cylinder
+	dais.position = Vector3(0, 0.02, 0)
+	var dais_mat := StandardMaterial3D.new()
+	dais_mat.albedo_color = Color("#132d69")
+	dais_mat.metallic = 0.65
+	dais_mat.roughness = 0.22
+	dais.material_override = dais_mat
+	arianna_turntable.add_child(dais)
+	var ring := MeshInstance3D.new()
+	var ring_mesh := TorusMesh.new()
+	ring_mesh.inner_radius = 2.14
+	ring_mesh.outer_radius = 2.28
+	ring.mesh = ring_mesh
+	ring.position = Vector3(0, 0.16, 0)
+	var ring_mat := StandardMaterial3D.new()
+	ring_mat.albedo_color = Color("#ffca65")
+	ring_mat.emission_enabled = true
+	ring_mat.emission = Color("#c68c31")
+	ring_mat.emission_energy_multiplier = 1.7
+	ring.material_override = ring_mat
+	arianna_turntable.add_child(ring)
+	var host_nodes_before := studio_root.get_child_count()
 	# Downstage podiums, deliberately separated from the contestant wall.
 	# Arianna's freestanding lectern: tapered body, illuminated front and slanted top.
 	_studio_box(Vector3(-10.6, 0.95, 1.85), Vector3(2.35, 1.9, 1.18), Color("#13234c"))
@@ -1045,6 +1081,15 @@ func _build_studio() -> void:
 	# Arianna Dawson: procedural 3D host avatar, visible behind the left podium.
 	if not _studio_texture_panel("res://knockout_concept_assets/arianna_game.svg", Vector3(-10.6, 2.7, 0.6), Vector2(2.9, 4.3), true):
 		_build_arianna_avatar(Vector3(-10.6, 0.0, 0.6))
+	# Move only the newly created host/lectern pieces onto the turntable.
+	# The scenery and contestant/category displays remain stationary.
+	var host_pieces: Array[Node3D] = []
+	for index in range(host_nodes_before, studio_root.get_child_count()):
+		var child := studio_root.get_child(index)
+		if child is Node3D:
+			host_pieces.append(child)
+	for piece in host_pieces:
+		piece.reparent(arianna_turntable, true)
 	_studio_texture_panel("res://knockout_concept_assets/studio_game.svg", Vector3(0, 6.0, -11.65), Vector2(34.0, 13.0), false)
 
 func _studio_box(pos: Vector3, dimensions: Vector3, color: Color) -> void:
@@ -1178,3 +1223,19 @@ func update_dialogue(delta: float) -> void:
 			dialogue_timer = 0.0
 			dialogue_step = (dialogue_step + 1) % dialogue_parts.size()
 			dialogue_text.text = dialogue_parts[dialogue_step]
+
+func _update_arianna_turntable() -> void:
+	if not is_instance_valid(arianna_turntable):
+		return
+	if phase == arianna_last_phase:
+		return
+	arianna_last_phase = phase
+	# Arianna addresses the camera before play, turns to the board for play,
+	# and returns for the final announcement.
+	var face_players := phase not in ["menu", "intro", "setup", "results", "game_over", "end"]
+	if face_players == arianna_facing_contestants:
+		return
+	arianna_facing_contestants = face_players
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(arianna_turntable, "rotation:y", deg_to_rad(-90.0 if face_players else 0.0), 2.0)
