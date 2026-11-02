@@ -48,6 +48,12 @@ var studio_root: Node3D
 var ai_clock: float = 0.0
 var human_names: Array = []
 var host_banner: Label
+var round_questions: int = 0
+var terminator_running: bool = false
+var spotlight_index: int = -1
+var spotlight_clock: float = 0.0
+var spotlight_steps: int = 0
+var spotlight_target: Array = []
 const CUES := ["Main Menu", "Host Entrance", "Opening Round", "Terminator", "Final Knockout", "Sudden Death", "Jackpot Win", "Elimination"]
 
 
@@ -143,11 +149,32 @@ func new_episode() -> void:
 	bonus = 0
 	round_number = 1
 	terminators_this_round = 0
+	round_questions = 0
+	terminator_running = false
+	spotlight_index = -1
 	render()
 
 
 func _process(delta: float) -> void:
 	if players.size() != 9 or answer_field == null:
+		return
+	if terminator_running:
+		spotlight_clock += delta
+		if spotlight_clock >= 0.13:
+			spotlight_clock = 0.0
+			spotlight_steps += 1
+			var available: Array = living()
+			if not available.is_empty():
+				spotlight_index = int(available.pick_random())
+				render()
+			if spotlight_steps >= 23:
+				_finish_spotlight()
+		return
+	if phase == "questions" and round_number <= 2 and round_questions >= 3 and terminators_this_round < 3:
+		_begin_host_terminator()
+		return
+	if phase == "questions" and round_number <= 2 and terminators_this_round == 3:
+		next_round()
 		return
 	ai_clock += delta
 	if ai_clock < 5.0:
@@ -219,6 +246,9 @@ func render() -> void:
 			state = "LOCKED OUT"
 		if pair.has(i):
 			state = "TERMINATOR"
+		if spotlight_index == i:
+			state = "SPOTLIGHT!"
+			b.add_theme_color_override("font_color", Color("#ffed8c"))
 		b.text = "%s%s  |  $%d\n%s" % [p["name"], " [AI]" if p["ai"] else " [YOU]", p["bank"], state]
 		b.disabled = not p["alive"] or (phase == "questions" and p["locked"])
 		b.pressed.connect(select_player.bind(i))
@@ -228,14 +258,14 @@ func render() -> void:
 		n.queue_free()
 	if phase == "questions":
 		question.text = questions[question_index % questions.size()][0]
-		if round_number <= 2 and terminators_this_round < 3:
-			add_button("KNOCKOUT — Activate Terminator", start_terminator)
-		elif round_number <= 2:
-			add_button("Advance to next round", next_round)
+		if round_number <= 2:
+			question.text = "ARIANNA: The Terminator activates automatically after three questions!" if round_questions >= 3 else question.text
 		elif round_number == 3:
 			add_button("Begin Final Knockout", start_final)
 	elif phase == "answer":
 		add_button("Submit answer", submit_answer)
+	elif phase == "spotlight":
+		question.text = "TERMINATOR SELECTING CONTESTANTS..."
 	elif phase == "terminator":
 		question.text = "TERMINATOR: " + questions[question_index % questions.size()][0]
 		add_button("Submit buzzer answer", submit_answer)
@@ -268,6 +298,7 @@ func submit_answer() -> void:
 		else:
 			players[buzz]["locked"] = true
 		phase = "questions"
+		round_questions += 1
 	elif phase == "terminator":
 		var loser: int = buzz
 		if correct:
@@ -277,11 +308,8 @@ func submit_answer() -> void:
 		players[loser]["alive"] = false
 		pair.clear()
 		phase = "questions"
-		if terminators_this_round == 3:
-			phase = "questions"
-			if round_number == 2:
-				round_number = 3
-				terminators_this_round = 0
+		if terminators_this_round < 3:
+			round_questions = 0
 	elif phase == "bonus":
 		if correct:
 			bonus += 1
@@ -298,26 +326,44 @@ func submit_answer() -> void:
 func next_round() -> void:
 	round_number += 1
 	terminators_this_round = 0
+	round_questions = 0
 	for p in players:
 		if p["alive"]:
 			p["locked"] = false
 	render()
 
-func start_terminator() -> void:
-	var a := living()
-	if round_number > 2 or terminators_this_round >= 3 or a.size() <= 3:
+func _begin_host_terminator() -> void:
+	if terminator_running or phase != "questions" or round_number > 2 or terminators_this_round >= 3:
 		return
+	var available: Array = living()
+	if available.size() <= 3:
+		return
+	terminator_running = true
+	phase = "spotlight"
+	spotlight_steps = 0
+	spotlight_clock = 0.0
+	spotlight_target = available.duplicate()
+	spotlight_target.shuffle()
+	spotlight_target.resize(2)
+	host_banner.text = "ARIANNA: The round is over... TERMINATOR, ACTIVATE!"
+	_play_cue("KNOCKOUT Selection SFX")
+	render()
+
+func _finish_spotlight() -> void:
+	terminator_running = false
+	spotlight_index = -1
+	pair = spotlight_target.duplicate()
+	spotlight_target.clear()
 	terminators_this_round += 1
-	a.shuffle()
-	pair = [a[0], a[1]]
 	buzz = -1
 	phase = "terminator"
-	_play_cue("KNOCKOUT Selection SFX")
-	get_tree().create_timer(2.0).timeout.connect(func():
-		if phase == "terminator":
-			_play_cue("KNOCKOUT Question Music")
-	)
+	host_banner.text = "ARIANNA: %s versus %s. One of you is going home!" % [str(players[int(pair[0])]["name"]), str(players[int(pair[1])]["name"])]
+	_play_cue("KNOCKOUT Question Music")
 	render()
+
+func start_terminator() -> void:
+	# Kept for compatibility with existing button and scene connections.
+	_begin_host_terminator()
 
 func start_final() -> void:
 	pair = living()
