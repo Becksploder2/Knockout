@@ -15,6 +15,12 @@ var players: Array = []
 var pair: Array = []
 var buzz := -1
 var bonus := 0
+var escape_time: float = 60.0
+var escape_target: int = -1
+var escape_selected: int = -1
+var escape_steps: int = 0
+var escape_clock: float = 0.0
+var escape_actor: String = ""
 var carry := 25000
 var champ := 4
 var main: VBoxContainer
@@ -282,9 +288,19 @@ func _process(delta: float) -> void:
 			var wager: int = randi_range(0, int(players[finalist]["bank"]))
 			answer_field.text = "%d|%s" % [wager, _ai_answer()]
 			submit_final()
-	elif phase == "bonus" and champ >= 0 and champ < players.size() and players[champ]["ai"]:
+	elif phase == "escape_choose" and players[champ]["ai"]:
+		var available: Array = []
+		for i in range(9):
+			if i != champ and players[i]["alive"]:
+				available.append(i)
+		if not available.is_empty():
+			choose_escape_opponent(int(available.pick_random()))
+	elif phase == "escape_panel" and escape_target >= 0 and players[escape_target]["ai"]:
 		answer_field.text = _ai_answer()
-		submit_answer()
+		submit_escape_answer()
+	elif phase == "escape_champion" and players[champ]["ai"]:
+		answer_field.text = _ai_answer()
+		submit_escape_answer()
 
 func _ai_answer() -> String:
 	# Difficulty baseline: approximately 70 percent correct.
@@ -395,6 +411,21 @@ func render() -> void:
 	elif phase == "final":
 		question.text = "FINAL KNOCKOUT: %s — Wager (0 to $%d), then lock in answer: %s" % [players[final_tied[final_cursor]]["name"], players[final_tied[final_cursor]]["bank"], questions[question_index % questions.size()][0]]
 		add_button("Submit wager and answer", submit_final)
+	elif phase == "escape_select":
+		question.text = "ARIANNA: The full board is restored! TERMINATOR — SELECT OUR ESCAPE CHALLENGER!"
+	elif phase == "escape_choose":
+		question.text = "ESCAPE | %s | %d SECONDS | Choose a surviving panel member" % [str(players[champ]["name"]), int(ceil(escape_time))]
+		for i in range(9):
+			if i != champ and players[i]["alive"]:
+				add_button("CHALLENGE %s" % str(players[i]["name"]), choose_escape_opponent.bind(i))
+	elif phase == "escape_panel":
+		question.text = "ESCAPE | %d SEC | %s answers first: %s" % [int(ceil(escape_time)), str(players[escape_target]["name"]), str(_current_question()[1])]
+		if not players[escape_target]["ai"]:
+			add_button("Submit panel answer", submit_escape_answer)
+	elif phase == "escape_champion":
+		question.text = "ESCAPE | %d SEC | %s must answer: %s" % [int(ceil(escape_time)), str(players[champ]["name"]), str(_current_question()[1])]
+		if not players[champ]["ai"]:
+			add_button("Submit champion answer", submit_escape_answer)
 	elif phase == "bonus":
 		question.text = "SUDDEN DEATH %d/5: %s" % [bonus+1, questions[question_index % questions.size()][0]]
 		add_button("Submit bonus answer", submit_answer)
@@ -546,7 +577,7 @@ func submit_final() -> void:
 	if final_cursor < final_tied.size():
 		render()
 		return
-	var expected: String = str(questions[question_index % questions.size()][1]).to_lower()
+	var expected: String = str(_current_question()[2]).to_lower()
 	for i in range(final_tied.size()):
 		var p_index: int = final_tied[i]
 		var score: int = int(players[p_index]["bank"])
@@ -569,16 +600,90 @@ func submit_final() -> void:
 		question_index += 1
 		render()
 		return
+	# Restore all nine squares for the Escape Round.
+	# Final Knockout winner is the provisional champion; the opening light
+	# randomly selects the actual Escape challenger from the restored board.
 	champ = int(winners[0])
-	for i in living():
-		if i != champ:
-			pot += int(players[i]["bank"])
-			players[i]["bank"] = 0
-			players[i]["alive"] = false
-	phase = "bonus"
-	bonus = 0
+	for p in players:
+		p["alive"] = true
+		p["locked"] = false
+	escape_selected = randi_range(0, 8)
+	escape_target = -1
+	escape_time = 60.0
+	escape_steps = 0
+	escape_clock = 0.0
+	phase = "escape_select"
+	if studio_spotlight != null:
+		studio_spotlight.visible = true
+	if studio_spotlight_b != null:
+		studio_spotlight_b.visible = false
+	host_banner.text = "ARIANNA: All nine squares are back! TERMINATOR, ACTIVATE!"
+	_play_cue("Terminator")
+	render()
+
+func choose_escape_opponent(index: int) -> void:
+	if phase != "escape_choose" or index == champ or not players[index]["alive"]:
+		return
+	escape_target = index
+	phase = "escape_panel"
+	host_banner.text = "ARIANNA: %s, you're up first!" % str(players[index]["name"])
+	render()
+
+func submit_escape_answer() -> void:
+	if phase != "escape_panel" and phase != "escape_champion":
+		return
+	var expected: String = str(_current_question()[2]).strip_edges().to_lower()
+	var correct: bool = answer_field.text.strip_edges().to_lower() == expected
+	answer_field.clear()
+	_mark_question_used()
 	question_index += 1
-	_play_cue("Sudden Death")
+	if phase == "escape_panel":
+		if correct:
+			phase = "escape_champion"
+			host_banner.text = "ARIANNA: Correct! Now the challenger must answer."
+		else:
+			_escape_knockout()
+	else:
+		if correct:
+			_escape_knockout()
+		else:
+			escape_time = maxf(0.0, escape_time - 15.0)
+			host_banner.text = "ARIANNA: Wrong! Fifteen seconds gone — panel member survives!"
+			phase = "escape_choose"
+			escape_target = -1
+			if escape_time <= 0.0:
+				_finish_escape(false)
+				return
+	render()
+
+func _escape_knockout() -> void:
+	players[escape_target]["alive"] = false
+	host_banner.text = "ARIANNA: %s is KNOCKED OUT!" % str(players[escape_target]["name"])
+	escape_target = -1
+	var survivors: int = 0
+	for i in range(9):
+		if i != champ and players[i]["alive"]:
+			survivors += 1
+	if survivors == 0:
+		_finish_escape(true)
+	else:
+		phase = "escape_choose"
+
+func _finish_escape(won: bool) -> void:
+	phase = "finished"
+	if won:
+		carry = pot
+		host_banner.text = "ARIANNA: ESCAPE COMPLETE! %s wins $%d!" % [str(players[champ]["name"]), pot]
+		question.text = "ESCAPE COMPLETE — JACKPOT WON!"
+	else:
+		for i in range(9):
+			players[i]["alive"] = true
+			players[i]["locked"] = false
+			if i != champ:
+				players[i]["bank"] = 0
+		carry = pot
+		host_banner.text = "ARIANNA: Time! Everyone returns next episode, panel banks reset!"
+		question.text = "ESCAPE FAILED — BOARD RESTORED"
 	render()
 
 func advance_episode() -> void:
