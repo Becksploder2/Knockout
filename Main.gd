@@ -529,8 +529,8 @@ func _build_studio() -> void:
 	studio_root = Node3D.new()
 	viewport.add_child(studio_root)
 	var camera := Camera3D.new()
-	camera.position = Vector3(0, 7.2, 19)
-	camera.look_at_from_position(camera.position, Vector3(0, 3.1, 0), Vector3.UP)
+	camera.position = Vector3(0, 7.8, 24)
+	camera.look_at_from_position(camera.position, Vector3(0, 4.2, -5), Vector3.UP)
 	studio_root.add_child(camera)
 	camera.current = true
 	var light := DirectionalLight3D.new()
@@ -546,16 +546,26 @@ func _build_studio() -> void:
 	env.ambient_light_energy = 0.5
 	environment.environment = env
 	studio_root.add_child(environment)
-	_studio_box(Vector3(0, -0.4, 0), Vector3(28, 0.7, 17), Color("#11182a"))
+	_studio_box(Vector3(0, -0.4, 0), Vector3(32, 0.7, 28), Color("#11182a"))
+	# Original branded cyc wall and illuminated stage framing.
+	_studio_box(Vector3(0, 6.0, -14.2), Vector3(30, 14, 0.5), Color("#10172e"))
+	_studio_box(Vector3(0, 11.6, -13.7), Vector3(18.8, 0.6, 0.55), Color("#f6bb47"))
+	_studio_box(Vector3(0, 0.15, -10.8), Vector3(20.0, 0.45, 4.2), Color("#172a50"))
+	for side in [-1, 1]:
+		_studio_box(Vector3(float(side) * 9.9, 5.6, -11.3), Vector3(0.6, 11.3, 1.3), Color("#d9a849"))
+		_studio_box(Vector3(float(side) * 12.4, 5.2, -13.7), Vector3(0.35, 10.0, 0.5), Color("#2266bb"))
 	for row_index in range(3):
 		for col_index in range(3):
 			var x: float = float(col_index - 1) * 5.0
 			var y: float = 7.0 - float(row_index) * 2.7
 			var champion: bool = row_index == 1 and col_index == 1
 			var accent: Color = Color("#ffcb62") if champion else Color("#218bff")
-			_studio_box(Vector3(x, y, -4), Vector3(4.35, 2.3, 0.5), accent)
-			_studio_box(Vector3(x, y, -3.69), Vector3(4.0, 2.0, 0.12), Color("#101f3d"))
-			_studio_box(Vector3(x, y - 0.84, -3.5), Vector3(3.7, 0.2, 0.45), accent)
+			# Each cell is a framed contestant bay rather than a flat floating panel.
+			_studio_box(Vector3(x, y, -11.35), Vector3(4.7, 2.55, 0.65), Color("#b58c39"))
+			_studio_box(Vector3(x, y, -11), Vector3(4.35, 2.3, 0.5), accent)
+			_studio_box(Vector3(x, y, -10.69), Vector3(4.0, 2.0, 0.12), Color("#101f3d"))
+			_studio_box(Vector3(x, y - 0.84, -10.5), Vector3(3.7, 0.2, 0.45), accent)
+	# Downstage podiums, deliberately separated from the contestant wall.
 	_studio_box(Vector3(-6.4, 0.6, 5), Vector3(3.2, 1.7, 1.7), Color("#b28b44"))
 	_studio_box(Vector3(-3.5, 0.65, 5), Vector3(0.85, 1.3, 0.85), Color("#b8242f"))
 	_studio_box(Vector3(-3.5, 1.36, 5), Vector3(0.9, 0.15, 0.9), Color("#ff3344"))
