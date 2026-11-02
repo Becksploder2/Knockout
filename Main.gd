@@ -81,6 +81,8 @@ var questions: Array = [["Geography","What is the capital of Texas?","Austin"],
 
 var question_index := 0
 var category_board: Label
+var stage_category_board: Label3D
+var freeze_target: int = -1
 var used_question_ids: Dictionary = {}
 const QUESTION_HISTORY := "user://knockout_used_questions.json"
 var answer_field: LineEdit
@@ -258,7 +260,7 @@ func _process(delta: float) -> void:
 	if phase == "questions":
 		var candidates: Array = []
 		for i in range(9):
-			if players[i]["alive"] and not players[i]["locked"] and players[i]["ai"]:
+			if players[i]["alive"] and not players[i]["locked"] and players[i]["ai"] and i != freeze_target:
 				candidates.append(i)
 		if not candidates.is_empty():
 			select_player(int(candidates.pick_random()))
@@ -332,9 +334,11 @@ func add_button(t: String, method: Callable) -> void:
 	actions.add_child(b)
 
 func render() -> void:
-	if _current_question().is_empty():
+	if _current_question().is_empty() and phase != "finished":
 		phase = "question_bank_empty"
 	category_board.text = "CATEGORY BOARD  |  " + ("QUESTION BANK EXHAUSTED" if phase == "question_bank_empty" else str(_current_question()[0]).to_upper())
+	if stage_category_board != null:
+		stage_category_board.text = category_board.text
 	info.text = "EPISODE %d  |  CASH POT $%d  |  ROUND %d  |  %s" % [episode, pot, round_number, phase.to_upper()]
 	for n in grid.get_children():
 		grid.remove_child(n)
@@ -351,25 +355,27 @@ func render() -> void:
 			state = "LOCKED OUT"
 		if pair.has(i):
 			state = "TERMINATOR"
+		if freeze_target == i and phase == "questions":
+			state = "FROZEN"
 		if spotlight_index == i or spotlight_index_b == i:
 			state = "SPOTLIGHT!"
 			b.add_theme_color_override("font_color", Color("#ffed8c"))
 		b.text = "%s\n$%d  |  %s" % [p["name"], p["bank"], state]
-		b.disabled = not p["alive"] or (phase == "questions" and p["locked"])
+		b.disabled = not p["alive"] or (phase == "questions" and (p["locked"] or freeze_target == i))
 		b.pressed.connect(select_player.bind(i))
 		grid.add_child(b)
 	if square_labels.size() == 9:
 		for i in range(9):
 			var nameplate: Label3D = square_labels[i]
 			var contestant: Dictionary = players[i]
-			nameplate.text = "%s\n$%d | %s" % [str(contestant["name"]), int(contestant["bank"]), "ELIMINATED" if not contestant["alive"] else "LOCKED" if contestant["locked"] else "ACTIVE"]
+			nameplate.text = "%s\n$%d | %s" % [str(contestant["name"]), int(contestant["bank"]), "ELIMINATED" if not contestant["alive"] else "FROZEN" if freeze_target == i and phase == "questions" else "LOCKED" if contestant["locked"] else "ACTIVE"]
 			nameplate.modulate = Color("#ffdf76") if spotlight_index == i or spotlight_index_b == i else Color.WHITE
 	for n in actions.get_children():
 		actions.remove_child(n)
 		n.queue_free()
 	if phase == "questions":
 		for i in range(9):
-			if not players[i]["ai"] and players[i]["alive"] and not players[i]["locked"]:
+			if not players[i]["ai"] and players[i]["alive"] and not players[i]["locked"] and i != freeze_target:
 				add_button("BUZZ IN — %s" % str(players[i]["name"]), select_player.bind(i))
 		question.text = _current_question()[1]
 		if round_number <= 2:
@@ -384,7 +390,7 @@ func render() -> void:
 		for index in pair:
 			if not players[int(index)]["ai"]:
 				add_button("BUZZ IN — %s" % str(players[int(index)]["name"]), select_player.bind(int(index)))
-		question.text = "TERMINATOR: " + questions[question_index % questions.size()][0]
+		question.text = "TERMINATOR: " + _current_question()[1]
 		add_button("Submit buzzer answer", submit_answer)
 	elif phase == "final":
 		question.text = "FINAL KNOCKOUT: %s — Wager (0 to $%d), then lock in answer: %s" % [players[final_tied[final_cursor]]["name"], players[final_tied[final_cursor]]["bank"], questions[question_index % questions.size()][0]]
@@ -396,7 +402,7 @@ func render() -> void:
 		add_button("Next episode", advance_episode)
 
 func select_player(i: int) -> void:
-	if phase == "questions":
+	if phase == "questions" and i != freeze_target and players[i]["alive"] and not players[i]["locked"]:
 		buzz = i
 		phase = "answer"
 	elif phase == "terminator" and pair.has(i):
@@ -406,13 +412,19 @@ func select_player(i: int) -> void:
 func submit_answer() -> void:
 	if phase != "bonus" and buzz < 0:
 		return
-	var correct: bool = answer_field.text.strip_edges().to_lower() == str(questions[question_index % questions.size()][1]).to_lower()
+	var correct: bool = answer_field.text.strip_edges().to_lower() == str(_current_question()[2]).to_lower()
 	answer_field.clear()
 	_mark_question_used()
 	question_index += 1
 	if phase == "answer":
 		if correct:
 			players[buzz]["bank"] += 1000
+			# A correct answer freezes one active opponent for the next question only.
+			var opponents: Array = []
+			for i in range(players.size()):
+				if i != buzz and players[i]["alive"] and not players[i]["locked"]:
+					opponents.append(i)
+			freeze_target = int(opponents.pick_random()) if not opponents.is_empty() else -1
 		else:
 			players[buzz]["locked"] = true
 		phase = "questions"
@@ -421,8 +433,12 @@ func submit_answer() -> void:
 		var loser: int = buzz
 		if correct:
 			loser = pair[1] if buzz == pair[0] else pair[0]
-		pot += players[loser]["bank"]
+		var winner: int = int(pair[1]) if loser == int(pair[0]) else int(pair[0])
+		var transfer: int = int(players[loser]["bank"])
+		players[winner]["bank"] += transfer
+		pot += transfer
 		players[loser]["bank"] = 0
+		freeze_target = -1
 		players[loser]["alive"] = false
 		pair.clear()
 		phase = "questions"
@@ -445,6 +461,7 @@ func next_round() -> void:
 	round_number += 1
 	terminators_this_round = 0
 	round_questions = 0
+	freeze_target = -1
 	for p in players:
 		if p["alive"]:
 			p["locked"] = false
@@ -456,6 +473,7 @@ func _begin_host_terminator() -> void:
 	var available: Array = living()
 	if available.size() <= 3:
 		return
+	freeze_target = -1
 	terminator_running = true
 	if studio_spotlight != null:
 		studio_spotlight.visible = true
@@ -780,6 +798,15 @@ func _build_studio() -> void:
 			nameplate.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 			studio_root.add_child(nameplate)
 			square_labels.append(nameplate)
+	# Physical category display mounted above the contestant bays.
+	stage_category_board = Label3D.new()
+	stage_category_board.position = Vector3(0, 11.2, -7.0)
+	stage_category_board.pixel_size = 0.008
+	stage_category_board.font_size = 62
+	stage_category_board.outline_size = 12
+	stage_category_board.modulate = Color("#ffe18d")
+	studio_root.add_child(stage_category_board)
+	_studio_box(Vector3(0, 11.1, -7.4), Vector3(16.2, 1.3, 0.25), Color("#152c70"))
 	# Refresh 3D nameplates after the stage is constructed.
 	render()
 	# Downstage podiums, deliberately separated from the contestant wall.
