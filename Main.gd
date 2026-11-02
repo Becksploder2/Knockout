@@ -931,13 +931,13 @@ func _build_studio() -> void:
 			square_status_labels.append(statusplate)
 	# Physical category display mounted above the contestant bays.
 	stage_category_board = Label3D.new()
-	stage_category_board.position = Vector3(0, 11.2, -7.0)
+	stage_category_board.position = Vector3(12.0, 7.0, -7.0)
 	stage_category_board.pixel_size = 0.008
 	stage_category_board.font_size = 62
 	stage_category_board.outline_size = 12
 	stage_category_board.modulate = Color("#ffe18d")
 	studio_root.add_child(stage_category_board)
-	_studio_box(Vector3(0, 11.1, -7.4), Vector3(16.2, 1.3, 0.25), Color("#152c70"))
+	_studio_box(Vector3(12.0, 7.0, -7.4), Vector3(6.8, 1.3, 0.25), Color("#152c70"))
 	# Refresh 3D nameplates after the stage is constructed.
 	render()
 	# Downstage podiums, deliberately separated from the contestant wall.
@@ -946,7 +946,10 @@ func _build_studio() -> void:
 	_studio_box(Vector3(-3.5, 1.36, 5), Vector3(0.9, 0.15, 0.9), Color("#ff3344"))
 	_studio_box(Vector3(-0.6, 0.6, 5), Vector3(2.2, 1.7, 1.5), Color("#244aa2"))
 	# Arianna Dawson: procedural 3D host avatar, visible behind the left podium.
-	_build_arianna_avatar(Vector3(-10.8, 0.0, 4.0))
+	if not _studio_texture_panel("res://knockout_concept_assets/arianna_concept.png", Vector3(-10.8, 2.1, 4.0), Vector2(2.5, 3.5), true):
+		_build_arianna_avatar(Vector3(-10.8, 0.0, 4.0))
+	_studio_texture_panel("res://knockout_concept_assets/contestant_wall.png", Vector3(0, 5.6, -8.65), Vector2(16.0, 10.0), false)
+	_studio_texture_panel("res://knockout_concept_assets/category_wall.png", Vector3(12.0, 4.5, -8.7), Vector2(6.5, 9.0), false)
 
 func _studio_box(pos: Vector3, dimensions: Vector3, color: Color) -> void:
 	var node := MeshInstance3D.new()
@@ -1004,3 +1007,26 @@ func _build_arianna_avatar(at: Vector3) -> void:
 	for tooth in range(4):
 		_avatar_ellipsoid(host, Vector3(-0.12 + tooth * 0.08, 2.44, 0.35), Vector3(0.057, 0.055, 0.022), Color("#f8f7ef"))
 	_avatar_ellipsoid(host, Vector3(0, 2.44, 0.37), Vector3(0.25, 0.012, 0.016), Color("#b0b6c2"))
+
+# Loads optional real concept-art textures when the supplied assets folder is
+# copied into the Godot project. The procedural set remains a safe fallback.
+func _studio_texture_panel(path: String, center: Vector3, dimensions: Vector2, transparent: bool) -> bool:
+	if not ResourceLoader.exists(path):
+		return false
+	var texture := load(path) as Texture2D
+	if texture == null:
+		return false
+	var panel := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = dimensions
+	panel.mesh = quad
+	panel.position = center
+	var mat := StandardMaterial3D.new()
+	mat.albedo_texture = texture
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	if transparent:
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	panel.material_override = mat
+	studio_root.add_child(panel)
+	return true
