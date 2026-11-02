@@ -52,6 +52,7 @@ func _main_menu() -> void:
 	_label("K N O C K O U T", true)
 	_label("One show. Nine contestants. Six KNOCKOUTS.")
 	_button("PLAY KNOCKOUT", _choose_players)
+	_button("BONUS PERIOD — PLAYABLE TEST", func(): get_tree().change_scene_to_file("res://scenes/bonus_period.tscn"))
 	_button("CREATE CONTESTANT", _create_screen)
 	_button("MANAGE CONTESTANTS", _manage_screen)
 	_button("IMPORT MUSIC / SFX", _audio_screen)
