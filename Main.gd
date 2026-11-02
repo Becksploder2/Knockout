@@ -879,9 +879,9 @@ func _build_studio() -> void:
 	studio_root = Node3D.new()
 	viewport.add_child(studio_root)
 	var camera := Camera3D.new()
-	camera.position = Vector3(0.0, 6.0, 21.5)
+	camera.position = Vector3(0.0, 8.0, 23.5)
 	camera.fov = 76.0
-	camera.look_at_from_position(camera.position, Vector3(0, 5.3, -7.4), Vector3.UP)
+	camera.look_at_from_position(camera.position, Vector3(0, 7.2, -7.4), Vector3.UP)
 	studio_root.add_child(camera)
 	camera.current = true
 	var light := DirectionalLight3D.new()
@@ -912,6 +912,22 @@ func _build_studio() -> void:
 	environment.environment = env
 	studio_root.add_child(environment)
 	_studio_box(Vector3(0, -0.4, 0), Vector3(32, 0.7, 28), Color("#11182a"))
+	# Textured, reflective-looking show floor using the bundled SVG art.
+	var floor_surface := MeshInstance3D.new()
+	var floor_mesh := PlaneMesh.new()
+	floor_mesh.size = Vector2(32.0, 25.0)
+	floor_surface.mesh = floor_mesh
+	floor_surface.position = Vector3(0, -0.035, 0)
+	var floor_material := StandardMaterial3D.new()
+	var floor_art := load("res://knockout_concept_assets/studio_floor.svg") as Texture2D
+	if floor_art != null:
+		floor_material.albedo_texture = floor_art
+	else:
+		floor_material.albedo_color = Color("#292576")
+	floor_material.metallic = 0.4
+	floor_material.roughness = 0.19
+	floor_surface.material_override = floor_material
+	studio_root.add_child(floor_surface)
 	# Colorful original studio cyclorama: tiered jewel-tone LED wall.
 	for band in range(7):
 		var palette: Array = [Color("#152b86"), Color("#442c9b"), Color("#822b9b"), Color("#b32e76"), Color("#bc443f"), Color("#8a3eac"), Color("#174ca0")]
@@ -937,7 +953,7 @@ func _build_studio() -> void:
 	for row_index in range(3):
 		for col_index in range(3):
 			var x: float = float(col_index - 1) * 4.1 + 0.3
-			var y: float = 8.1 - float(row_index) * 2.7
+			var y: float = 10.3 - float(row_index) * 2.7
 			var champion: bool = row_index == 1 and col_index == 1
 			var accent: Color = Color("#ffcb62") if champion else Color("#218bff")
 			# Each cell is a framed contestant bay rather than a flat floating panel.
@@ -972,20 +988,20 @@ func _build_studio() -> void:
 			square_status_labels.append(statusplate)
 	# Physical category display mounted above the contestant bays.
 	stage_category_board = Label3D.new()
-	stage_category_board.position = Vector3(11.7, 7.0, -6.8)
+	stage_category_board.position = Vector3(11.7, 9.0, -6.8)
 	stage_category_board.pixel_size = 0.004
 	stage_category_board.font_size = 52
 	stage_category_board.outline_size = 12
 	stage_category_board.modulate = Color("#ffe18d")
 	studio_root.add_child(stage_category_board)
-	_studio_box(Vector3(11.7, 7.0, -7.4), Vector3(7.0, 5.8, 0.25), Color("#152c70"))
+	_studio_box(Vector3(11.7, 9.0, -7.4), Vector3(7.0, 5.8, 0.25), Color("#152c70"))
 	# Studio-wide KNOCKOUT header and original illuminated gold chevrons.
-	_studio_box(Vector3(0.0, 11.6, -8.5), Vector3(15.0, 1.35, 0.25), Color("#101e50"))
-	_studio_box(Vector3(0.0, 12.3, -8.55), Vector3(15.6, 0.13, 0.30), Color("#ffd16a"))
-	_studio_box(Vector3(0.0, 10.85, -8.55), Vector3(15.6, 0.13, 0.30), Color("#ffd16a"))
+	_studio_box(Vector3(0.0, 13.5, -8.5), Vector3(15.0, 1.35, 0.25), Color("#101e50"))
+	_studio_box(Vector3(0.0, 14.2, -8.55), Vector3(15.6, 0.13, 0.30), Color("#ffd16a"))
+	_studio_box(Vector3(0.0, 12.75, -8.55), Vector3(15.6, 0.13, 0.30), Color("#ffd16a"))
 	var logo := Label3D.new()
 	logo.text = "K N O C K O U T"
-	logo.position = Vector3(0, 11.55, -8.1)
+	logo.position = Vector3(0, 13.45, -8.1)
 	logo.font_size = 105
 	logo.pixel_size = 0.009
 	logo.outline_size = 12
@@ -993,7 +1009,7 @@ func _build_studio() -> void:
 	studio_root.add_child(logo)
 	# The right-hand categories are a physical five-row illuminated LED display.
 	for category_index in range(5):
-		var cy := 9.0 - float(category_index) * 1.08
+		var cy := 11.0 - float(category_index) * 1.08
 		_studio_box(Vector3(11.7, cy, -7.1), Vector3(6.5, 0.93, 0.22), Color("#edb750"))
 		_studio_box(Vector3(11.7, cy, -6.95), Vector3(6.24, 0.72, 0.16), Color("#102d83"))
 		var category_title := Label3D.new()
