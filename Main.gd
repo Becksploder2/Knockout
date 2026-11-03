@@ -121,6 +121,8 @@ var ai_clock: float = 0.0
 var human_names: Array = []
 var host_banner: Label
 var round_questions: int = 0
+var category_slots: Array = []
+var active_category: Array = []
 var terminator_running: bool = false
 var spotlight_index: int = -1
 var spotlight_index_b: int = -1
@@ -303,7 +305,7 @@ func _process(delta: float) -> void:
 			return
 		if int(ceil(escape_time)) != previous_second:
 			render()
-	if phase == "questions" and round_number <= 2 and round_questions >= 3 and terminators_this_round < 3:
+	if phase == "questions" and round_number <= 2 and round_questions >= (10 if round_number == 1 else 5) and terminators_this_round < 3:
 		_begin_host_terminator()
 		return
 	if phase == "questions" and round_number <= 2 and terminators_this_round == 3:
@@ -399,10 +401,36 @@ func add_button(t: String, method: Callable) -> void:
 	b.pressed.connect(method)
 	actions.add_child(b)
 
+func _fill_category_slots() -> void:
+	category_slots.clear()
+	var available: Array = []
+	for q in questions:
+		if not used_question_ids.has(str(q[1])):
+			available.append(q)
+	available.shuffle()
+	for q in available:
+		if category_slots.size() >= (10 if round_number == 1 else 5):
+			break
+		category_slots.append({"name": str(q[0]), "question": q, "played": false})
+
+func _select_category(index: int) -> void:
+	if phase != "questions" or not active_category.is_empty() or index < 0 or index >= category_slots.size():
+		return
+	if category_slots[index]["played"]:
+		return
+	active_category = category_slots[index]["question"]
+	category_slots[index]["played"] = true
+	render()
+
 func render() -> void:
 	if _current_question().is_empty() and phase != "finished":
 		phase = "question_bank_empty"
-	category_board.text = "CATEGORY BOARD  |  " + ("QUESTION BANK EXHAUSTED" if phase == "question_bank_empty" else str(_current_question()[0]).to_upper())
+	if category_slots.is_empty() and phase == "questions" and round_number <= 2:
+		_fill_category_slots()
+	var categories_display: Array[String] = []
+	for slot in category_slots:
+		categories_display.append(("[USED] " if slot["played"] else "") + str(slot["name"]))
+	category_board.text = "CATEGORIES • %d/%d\n%s" % [round_questions, 10 if round_number == 1 else 5, "  |  ".join(categories_display)]
 	if stage_category_board != null:
 		stage_category_board.text = category_board.text
 	info.text = "EPISODE %d  |  CASH POT $%d  |  ROUND %d  |  %s" % [episode, pot, round_number, phase.to_upper()]
@@ -444,12 +472,16 @@ func render() -> void:
 		actions.remove_child(n)
 		n.queue_free()
 	if phase == "questions":
+		if active_category.is_empty() and round_number <= 2:
+			for slot_index in range(category_slots.size()):
+				if not category_slots[slot_index]["played"]:
+					add_button(str(category_slots[slot_index]["name"]), _select_category.bind(slot_index))
 		for i in range(9):
-			if not players[i]["ai"] and players[i]["alive"] and not players[i]["locked"] and i != freeze_target:
+			if (round_number > 2 or not active_category.is_empty()) and not players[i]["ai"] and players[i]["alive"] and not players[i]["locked"] and i != freeze_target:
 				add_button("BUZZ IN — %s" % str(players[i]["name"]), select_player.bind(i))
-		question.text = _current_question()[1]
+		question.text = str(active_category[1]) if not active_category.is_empty() else "ARIANNA: Choose a category from the board."
 		if round_number <= 2:
-			question.text = "ARIANNA: The Terminator activates automatically after three questions!" if round_questions >= 3 else question.text
+			question.text = "ARIANNA: All categories played! Terminator, activate!" if round_questions >= (10 if round_number == 1 else 5) else question.text
 		elif round_number == 3:
 			add_button("Begin Final Knockout", start_final)
 	elif phase == "answer":
@@ -497,10 +529,15 @@ func select_player(i: int) -> void:
 func submit_answer() -> void:
 	if phase != "bonus" and buzz < 0:
 		return
-	var correct: bool = answer_field.text.strip_edges().to_lower() == str(_current_question()[2]).to_lower()
+	var expected: String = str(active_category[2]) if phase == "answer" and not active_category.is_empty() else str(_current_question()[2])
+	var correct: bool = answer_field.text.strip_edges().to_lower() == expected.to_lower()
 	answer_field.clear()
-	_mark_question_used()
-	question_index += 1
+	if phase == "answer" and not active_category.is_empty():
+		used_question_ids[str(active_category[1])] = true
+		active_category.clear()
+	else:
+		_mark_question_used()
+		question_index += 1
 	if phase == "answer":
 		if correct:
 			players[buzz]["bank"] += 1000
@@ -528,8 +565,7 @@ func submit_answer() -> void:
 		players[loser]["alive"] = false
 		pair.clear()
 		phase = "questions"
-		if terminators_this_round < 3:
-			round_questions = 0
+		
 	elif phase == "bonus":
 		if correct:
 			bonus += 1
@@ -547,6 +583,8 @@ func next_round() -> void:
 	round_number += 1
 	terminators_this_round = 0
 	round_questions = 0
+	category_slots.clear()
+	active_category.clear()
 	freeze_target = -1
 	for p in players:
 		if p["alive"]:
