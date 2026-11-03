@@ -102,6 +102,7 @@ var question_index := 0
 var category_board: Label
 var stage_category_board: Label3D
 var stage_category_titles: Array[Label3D] = []
+var studio_camera: Camera3D
 var freeze_target: int = -1
 var used_question_ids: Dictionary = {}
 const QUESTION_HISTORY := "user://knockout_used_questions.json"
@@ -935,6 +936,7 @@ func _build_studio() -> void:
 	camera.look_at_from_position(camera.position, Vector3(1.0, 8.0, -7.4), Vector3.UP)
 	studio_root.add_child(camera)
 	camera.current = true
+	studio_camera = camera
 	var light := DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-48, 25, 0)
 	light.light_energy = 1.5
@@ -1059,17 +1061,17 @@ func _build_studio() -> void:
 	logo.modulate = Color("#fff1cb")
 	studio_root.add_child(logo)
 	# The right-hand categories are a physical five-row illuminated LED display.
-	_studio_box(Vector3(11.7, 8.8, -7.5), Vector3(9.0, 8.2, 0.25), Color("#e8b956"))
+	_studio_box(Vector3(11.7, 8.8, -7.5), Vector3(12.0, 10.0, 0.25), Color("#e8b956"))
 	for category_index in range(10):
-		var cy := 11.7 - float(category_index % 5) * 1.38
-		var cx := 9.65 if category_index < 5 else 13.75
-		_studio_box(Vector3(cx, cy, -7.1), Vector3(3.9, 1.12, 0.22), Color("#edb750"))
-		_studio_box(Vector3(cx, cy, -6.95), Vector3(3.7, 0.9, 0.16), Color("#102d83"))
+		var cy := 12.0 - float(category_index % 5) * 1.75
+		var cx := 8.6 if category_index < 5 else 14.6
+		_studio_box(Vector3(cx, cy, -7.1), Vector3(5.65, 1.48, 0.22), Color("#edb750"))
+		_studio_box(Vector3(cx, cy, -6.95), Vector3(5.4, 1.25, 0.16), Color("#102d83"))
 		var category_title := Label3D.new()
 		category_title.text = ""
 		category_title.position = Vector3(cx, cy, -6.75)
-		category_title.pixel_size = 0.003
-		category_title.font_size = 56
+		category_title.pixel_size = 0.006
+		category_title.font_size = 100
 		category_title.modulate = Color.WHITE
 		studio_root.add_child(category_title)
 		stage_category_titles.append(category_title)
@@ -1289,4 +1291,4 @@ func _update_arianna_turntable() -> void:
 	arianna_facing_contestants = face_players
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(arianna_turntable, "rotation:y", deg_to_rad(-90.0 if face_players else 0.0), 2.0)
+	tween.tween_property(arianna_turntable, "rotation:y", deg_to_rad(180.0 if face_players else 0.0), 2.0)
