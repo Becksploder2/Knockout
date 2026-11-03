@@ -101,6 +101,7 @@ var questions: Array = [["Geography","What is the capital of Texas?","Austin"],
 var question_index := 0
 var category_board: Label
 var stage_category_board: Label3D
+var stage_category_titles: Array[Label3D] = []
 var freeze_target: int = -1
 var used_question_ids: Dictionary = {}
 const QUESTION_HISTORY := "user://knockout_used_questions.json"
@@ -315,6 +316,12 @@ func _process(delta: float) -> void:
 	if ai_clock < 5.0:
 		return
 	ai_clock = 0.0
+	if phase == "questions" and active_category.is_empty() and round_number <= 2:
+		for slot_index in range(category_slots.size()):
+			if not category_slots[slot_index]["played"]:
+				_select_category(slot_index)
+				break
+		return
 	if phase == "questions":
 		var candidates: Array = []
 		for i in range(9):
@@ -432,7 +439,9 @@ func render() -> void:
 		categories_display.append(("[USED] " if slot["played"] else "") + str(slot["name"]))
 	category_board.text = "CATEGORIES • %d/%d\n%s" % [round_questions, 10 if round_number == 1 else 5, "  |  ".join(categories_display)]
 	if stage_category_board != null:
-		stage_category_board.text = category_board.text
+		stage_category_board.text = "ROUND %d • %d/%d" % [round_number, round_questions, 10 if round_number == 1 else 5]
+	for slot_index in range(stage_category_titles.size()):
+		stage_category_titles[slot_index].text = (("✓ " if category_slots[slot_index]["played"] else "") + str(category_slots[slot_index]["name"])) if slot_index < category_slots.size() else ""
 	info.text = "EPISODE %d  |  CASH POT $%d  |  ROUND %d  |  %s" % [episode, pot, round_number, phase.to_upper()]
 	for n in grid.get_children():
 		grid.remove_child(n)
@@ -519,7 +528,7 @@ func render() -> void:
 		add_button("Next episode", advance_episode)
 
 func select_player(i: int) -> void:
-	if phase == "questions" and i != freeze_target and players[i]["alive"] and not players[i]["locked"]:
+	if phase == "questions" and (round_number > 2 or not active_category.is_empty()) and i != freeze_target and players[i]["alive"] and not players[i]["locked"]:
 		buzz = i
 		phase = "answer"
 	elif phase == "terminator" and pair.has(i):
@@ -1050,17 +1059,20 @@ func _build_studio() -> void:
 	logo.modulate = Color("#fff1cb")
 	studio_root.add_child(logo)
 	# The right-hand categories are a physical five-row illuminated LED display.
-	for category_index in range(5):
-		var cy := 11.0 - float(category_index) * 1.08
-		_studio_box(Vector3(11.7, cy, -7.1), Vector3(6.5, 0.93, 0.22), Color("#edb750"))
-		_studio_box(Vector3(11.7, cy, -6.95), Vector3(6.24, 0.72, 0.16), Color("#102d83"))
+	_studio_box(Vector3(11.7, 8.8, -7.5), Vector3(9.0, 8.2, 0.25), Color("#e8b956"))
+	for category_index in range(10):
+		var cy := 11.7 - float(category_index % 5) * 1.38
+		var cx := 9.65 if category_index < 5 else 13.75
+		_studio_box(Vector3(cx, cy, -7.1), Vector3(3.9, 1.12, 0.22), Color("#edb750"))
+		_studio_box(Vector3(cx, cy, -6.95), Vector3(3.7, 0.9, 0.16), Color("#102d83"))
 		var category_title := Label3D.new()
-		category_title.text = ["HISTORY", "SCIENCE", "POP CULTURE", "SPORTS", "GEOGRAPHY"][category_index]
-		category_title.position = Vector3(11.7, cy, -6.75)
-		category_title.pixel_size = 0.005
-		category_title.font_size = 68
+		category_title.text = ""
+		category_title.position = Vector3(cx, cy, -6.75)
+		category_title.pixel_size = 0.003
+		category_title.font_size = 56
 		category_title.modulate = Color.WHITE
 		studio_root.add_child(category_title)
+		stage_category_titles.append(category_title)
 	# Floor-mounted light rails and matching purple-blue overhead light truss.
 	for rail in range(4):
 		_studio_box(Vector3(0, 0.05, float(rail) * 2.2 - 4.0), Vector3(29, 0.07, 0.12), Color("#6646e8"))
