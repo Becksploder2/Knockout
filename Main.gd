@@ -1292,3 +1292,35 @@ func _update_arianna_turntable() -> void:
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(arianna_turntable, "rotation:y", deg_to_rad(180.0 if face_players else 0.0), 2.0)
+
+func _input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton) or event.button_index != MOUSE_BUTTON_LEFT or not event.pressed:
+		return
+	if not is_instance_valid(studio_camera) or not is_instance_valid(studio_view):
+		return
+	var area := studio_view.get_global_rect()
+	if not area.has_point(event.position):
+		return
+	var click := (event.position - area.position) * Vector2(1280.0 / area.size.x, 800.0 / area.size.y)
+	if phase == "questions" and active_category.is_empty() and round_number <= 2:
+		for i in range(category_slots.size()):
+			if category_slots[i]["played"]:
+				continue
+			var at := Vector3(8.6 if i < 5 else 14.6, 12.0 - float(i % 5) * 1.75, -6.75)
+			var center := studio_camera.unproject_position(at)
+			if center.distance_to(click) < 55.0:
+				_select_category(i)
+				get_viewport().set_input_as_handled()
+				return
+	if phase in ["questions", "terminator"]:
+		for i in range(9):
+			if not players[i]["alive"] or (phase == "questions" and (players[i]["locked"] or active_category.is_empty())):
+				continue
+			if phase == "terminator" and not pair.has(i):
+				continue
+			var at := Vector3(float(i % 3 - 1) * 5.0, 10.3 - float(i / 3) * 2.7, -6.6)
+			var center := studio_camera.unproject_position(at)
+			if center.distance_to(click) < 70.0:
+				select_player(i)
+				get_viewport().set_input_as_handled()
+				return
